@@ -1,6 +1,6 @@
 {
   "name": "glowglow",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "CSS-first, language-agnostic syntax highlighting for the web. A maintained TypeScript fork of nue-glow.",
   "license": "MIT",
   "type": "module",
