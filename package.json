@@ -1,0 +1,63 @@
+{
+  "name": "glowglow",
+  "version": "0.1.0",
+  "description": "CSS-first, language-agnostic syntax highlighting for the web. A maintained TypeScript fork of nue-glow.",
+  "license": "MIT",
+  "type": "module",
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "files": [
+    "dist",
+    "css"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./css/*": "./css/*",
+    "./package.json": "./package.json"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "prepublishOnly": "pnpm build"
+  },
+  "keywords": [
+    "syntax-highlighting",
+    "syntax-highlighter",
+    "highlight",
+    "code",
+    "markdown",
+    "css",
+    "nue",
+    "glow"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:hhk-png/glowglow.git"
+  },
+  "homepage": "https://github.com/hhk-png/glowglow",
+  "bugs": {
+    "url": "https://github.com/hhk-png/glowglow/issues"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsdown": "^0.23.0",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.0"
+  }
+}
