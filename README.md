@@ -104,6 +104,16 @@ pnpm build       # tsdown → dist/ (ESM, CJS, .d.ts)
 node preview/generate.mjs  # regenerate preview/preview.html from preview/samples/
 ```
 
+### Releasing
+
+Releases go through [bumpp](https://github.com/antfu/bumpp). `pnpm release` prompts for the bump, then bumps the version, runs `npm publish` (the existing `prepublishOnly` builds first), and creates the `v*` git tag and commit and pushes them:
+
+```bash
+pnpm release          # interactive: pick patch / minor / major
+# skip the prompt, e.g. a non-interactive patch bump:
+pnpm release -- --release patch --yes
+```
+
 ## Credits & license
 
 Forked from [nuejs/nue · nue-glow](https://github.com/nuejs/nue) (MIT, © 2025-present Tero Piirainen). Ported to TypeScript, re-engineered with a language-free tokenizer, and maintained as **glowglow**. Released under the [MIT License](./LICENSE).
