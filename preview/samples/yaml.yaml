@@ -1,0 +1,25 @@
+# YAML: mappings, sequences, quoted scalars and multiline block scalars.
+version: "3.8"
+
+services:
+  api:
+    image: node:20-alpine # inline comment
+    ports:
+      - "8080:8080"
+    environment:
+      NODE_ENV: production
+      MAX_RETRIES: 5
+    volumes:
+      - ./data:/srv/data
+
+config:
+  features:
+    - name: search
+      enabled: true
+    - name: cache
+      enabled: false
+  message: |
+    A folded message that
+    continues onto several lines.
+  exact: |-
+    no trailing newline

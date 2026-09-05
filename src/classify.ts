@@ -171,6 +171,31 @@ export function classify(src: string, toks: Token[]): ClassifiedToken[] {
     }
   }
 
+  // --- quoted object keys ------------------------------------------------
+  // In JSON (and quoted keys in JS/Python dicts etc.) a key is a quoted string
+  // whose following token is a single ':' and whose preceding token is '{' or
+  // ','. Give the key the identifier colour <b> so it reads apart from string
+  // *values* (which stay <em>). Ternary branches ("a" : … after '?') and other
+  // plain strings never match because they are not preceded by '{' or ','.
+  const keyIdx = new Set<number>()
+  for (let i = 0; i < n; i++) {
+    const t = toks[i]!
+    if (t.kind !== 'str') continue
+    if (i > 0 && toks[i - 1]!.kind === 'str' && toks[i - 1]!.end === t.start) continue
+    let j = i
+    while (j + 1 < n && toks[j + 1]!.kind === 'str' && toks[j + 1]!.start === toks[j]!.end) j++
+    let k = j + 1
+    while (k < n && toks[k]!.kind === 'ws') k++
+    let p = i - 1
+    while (p >= 0 && toks[p]!.kind === 'ws') p--
+    const hasColon = k < n && toks[k]!.kind === 'op' && text(toks[k]!) === ':'
+    const afterObject = p >= 0 && toks[p]!.kind === 'op' && (text(toks[p]!) === '{' || text(toks[p]!) === ',')
+    if (hasColon && afterObject) {
+      for (let m = i; m <= j; m++) keyIdx.add(m)
+    }
+    i = j
+  }
+
   // --- final pass: kind + context -> tag -------------------------------------
   const out: ClassifiedToken[] = []
   for (let i = 0; i < n; i++) {
@@ -181,6 +206,8 @@ export function classify(src: string, toks: Token[]): ClassifiedToken[] {
         tag = 'sup'
         break
       case 'str':
+        tag = keyIdx.has(i) ? 'b' : 'em'
+        break
       case 'num':
         tag = 'em'
         break

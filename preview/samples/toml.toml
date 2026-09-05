@@ -1,0 +1,27 @@
+# TOML: tables, arrays, dates and basic/multi-line strings.
+title = "glowglow demo" # strings can be basic or literal
+
+[owner]
+name = "hhk-png"
+dob = 2026-09-05T12:00:00Z
+email = "demo@example.com"
+
+[database]
+enabled = true
+ports = [8000, 8001, 8002]
+temp_targets = { cpu = 79.5, case = 72.0 }
+
+[description]
+basic = """
+This multi-line basic string uses
+triple quotes, so the highlighter
+treats it like one long string.
+"""
+
+[[products]]
+name = "Hammer"
+sku = 738594937
+
+[[products]]
+name = "Nail"
+sku = 284758393

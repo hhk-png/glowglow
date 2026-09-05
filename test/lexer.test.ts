@@ -67,6 +67,15 @@ describe('lex — kinds & boundaries', () => {
     expect(shape('a /* unterminated')).toBe('word:"a" ws:" " comment:"/* unterminated"')
   })
 
+  test('lua long block comment --[[ … ]] spans lines', () => {
+    expect(shape('--[[ doc\n still doc ]]')).toBe('comment:"--[[ doc\\n still doc ]]"')
+    expect(shape('--[==[ doc\nstill ]]==] end')).toBe(
+      'comment:"--[==[ doc\\nstill ]]==]" ws:" " word:"end"',
+    )
+    // a decrement glued to an index is not a lua comment
+    expect(shape('a--[0]')).toBe('word:"a" op:"--" op:"[" num:"0" op:"]"')
+  })
+
   test('numbers: bases, separators, decimals, exponents, suffixed', () => {
     expect(shape('0xFF')).toBe('num:"0xFF"')
     expect(shape('0b101 0o17')).toBe('num:"0b101" ws:" " num:"0o17"')

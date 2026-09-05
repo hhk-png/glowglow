@@ -235,6 +235,17 @@ export function lex(src: string): Token[] {
       continue
     }
 
+    // Lua long block comment  --[[ … ]] / --[==[ … ]==]  (multiline, unambiguous
+    // because it starts with '--')
+    if (c === '-' && src[i + 1] === '-') {
+      const end = luaBlockEnd(src, i + 2)
+      if (end !== -1) {
+        emit('comment', i, end)
+        i = end
+        continue
+      }
+    }
+
     // SQL / Lua / Haskell style -- comment. Only when it is clearly standalone:
     // preceded by whitespace/line-start AND followed by whitespace/EOL, so glued
     // decrements (a--, --x, x = a--) stay operators.
@@ -403,6 +414,19 @@ function scanNumber(src: string, start: number): number {
     i = p
   }
   return i
+}
+
+// Lua long-bracket opener "[[", "[=[", "[==[" … starting at `from`? Returns the
+// byte offset just past the matching "]]"/"]=]"/…, or -1 when it is not a long
+// bracket. Used only after "--" so it can never collide with code.
+function luaBlockEnd(src: string, from: number): number {
+  if (src[from] !== '[') return -1
+  let k = from + 1
+  while (src[k] === '=') k++
+  if (src[k] !== '[') return -1
+  const close = ']' + src.slice(from + 1, k) + ']'
+  const hit = src.indexOf(close, k + 1)
+  return hit === -1 ? src.length : hit + close.length
 }
 
 export function tokenText(src: string, tok: Token): string {

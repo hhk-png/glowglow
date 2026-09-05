@@ -77,6 +77,25 @@ describe('classify — semantic colour tags', () => {
     expect(h).toContain('<i>&lt;</i>')
   })
 
+  test('json object keys take the identifier colour, values stay strings', () => {
+    const h = html('{ "name": "ana", "n": 1 }')
+    expect(h).toContain('<b>"</b><b>name</b><b>"</b>')
+    expect(h).toContain('<em>"</em><em>ana</em><em>"</em>') // value unchanged
+    expect(h).toContain('<em>1</em>') // number value
+    expect(h).not.toContain('<em>"</em><em>name</em><em>"</em>') // key not string-coloured
+  })
+
+  test('a string before a colon that is not an object key stays <em>', () => {
+    expect(html('x = cond ? "a" : "b"')).toContain('<em>"</em><em>a</em><em>"</em>')
+    expect(html('x = cond ? "a" : "b"')).not.toContain('<b>a</b>')
+  })
+
+  test('quoted keys work in object literals next to plain ones', () => {
+    const h = html('{ "a": 1, b: 2 }')
+    expect(h).toContain('<b>"</b><b>a</b><b>"</b>')
+    expect(h).toContain('<b>b</b>') // unquoted key was already an identifier
+  })
+
   test('prose between matched tags is left uncoloured; code between braces is not', () => {
     const tag = html('<p>Hello</p>')
     // tag name strong, prose plain

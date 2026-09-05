@@ -53,13 +53,13 @@ Because there is no language hint, recognition is *structural* — strings, comm
 
 - Strings `'…'` / `"…"` with `\` escapes, triple-quoted `"""…"""`, and multiline backtick templates with nested `${…}`.
 - Python `f"…"` and C# `$"…"` interpolating strings (`{…}`), plus `{{` escapes.
-- Line comments `//`, `#` (only before a space — `#fff` and `#include` stay code), `#!` shebangs, and `--` when clearly standalone (SQL/Lua/Haskell). Block comments `/* … */` and `<!-- … -->` span lines.
+- Line comments `//`, `#` (only before a space — `#fff` and `#include` stay code), `#!` shebangs, and `--` when clearly standalone (SQL/Lua/Haskell). Block comments `/* … */`, `<!-- … -->` and Lua `--[[ … ]]` all span lines.
 - Numbers in every base: `0xFF`, `0b101`, `0o17`, `1_000`, `.5`, `1e-3`, `1n`, `10u32`.
 - `@decorators`, Unicode/CJK identifiers, `obj.type` property access.
 
 Markup is only recognised when the structure really is markup: an HTML/XML tag name, a self-closing tag, or an element whose open and close tags both appear. So `<div>`, `<img/>`, `<MyComp>…</MyComp>` are tags — but TypeScript generics `foo<T>(x)` and comparisons `a < b` are never mis-coloured.
 
-**Known trade-offs** (inherent to being language-free): a JS regular-expression literal `/…/` is read as a division operator; exotic block comments such as `(* *)` or `{- -}` are not specially treated. The keyword table is a cross-language union, so a rare false positive (an identifier that happens to be a reserved word *somewhere*) is possible — and an identifier after a `.` is treated as a property, never a keyword, so `obj.type` stays clean.
+**Known trade-offs** (inherent to being language-free): a JS regular-expression literal `/…/` is read as a division operator; exotic block comments such as OCaml `(* *)` or Haskell `{- -}` are not specially treated (they would be ambiguous with C dereferences and object literals). The keyword table is a cross-language union, so a rare false positive (an identifier that happens to be a reserved word *somewhere*) is possible — and an identifier after a `.` is treated as a property, never a keyword, so `obj.type` stays clean.
 
 ## Styling
 

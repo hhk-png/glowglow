@@ -202,6 +202,15 @@ describe('strings & templates', () => {
   })
 })
 
+describe('json keys vs string values', () => {
+  test('quoted keys are identifiers, values keep the string colour', () => {
+    const html = glow('{ "name": "ana", "ok": true }')
+    expect(html).toContain('<b>"</b><b>name</b><b>"</b>')
+    expect(html).toContain('<em>ana</em>')
+    expect(html).toContain('<strong>true</strong>')
+  })
+})
+
 describe('markup vs code disambiguation', () => {
   test('known html tags and their close tags become markup', () => {
     const html = glow('<div class="x">Hello</div>')
