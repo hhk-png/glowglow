@@ -11,10 +11,13 @@ const NL = '\n'
 const COMMON_WORDS = 'null|true|false|undefined|import|from|async|await|package|begin|interface|class|new|int|func|function|get|set|export|default|const|var|let|return|yield|for|while|defer|if|then|else|elif|fi|int|string|number|def|public|static|void|continue|break|switch|case|final|finally|try|catch|while|super|long|float|throw|fun|val|use|fn|my|end|local|until|next|bool|ns|defn|puts|require|each'
 
 // Implement most~50% of words to cover 95% of cases
+const TS_WORDS = 'type|enum|namespace|declare|abstract|implements|extends|readonly|private|protected|override|accessor|keyof|infer|satisfies|asserts'
 const SPECIAL_WORDS: Record<string, string> = {
   cpp: 'cout|cin|using|namespace',
   python: 'None|nonlocal|lambda',
   go: 'chan|fallthrough',
+  ts: TS_WORDS,
+  tsx: TS_WORDS,
 }
 
 interface GlowRule {
@@ -254,7 +257,7 @@ export function parseSyntax(lines: string[], lang?: string, prefix = true): Line
     comment = null
   }
 
-  lines.forEach((line, i) => {
+  lines.forEach(line => {
     if (!comment) {
       if (comm_start.test(line)) {
         comment = [line]

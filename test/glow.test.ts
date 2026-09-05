@@ -63,6 +63,23 @@ test('disable prefixes', () => {
   expect(blocks[2].wrap).toEqual(false)
 })
 
+describe('TypeScript keywords', () => {
+  test('type-declaration keywords are highlighted', () => {
+    const html = renderRow('type Foo = keyof T extends string ? never : readonly Foo[]', 'ts')
+    expect(html).toContain('<strong>type</strong>')
+    expect(html).toContain('<strong>keyof</strong>')
+    expect(html).toContain('<strong>extends</strong>')
+    expect(html).toContain('<strong>readonly</strong>')
+    expect(html).toContain('<strong>string</strong>')
+  })
+
+  test('enum / namespace / modifiers highlight', () => {
+    const html = renderRow('declare enum E { }', 'ts')
+    expect(html).toContain('<strong>declare</strong>')
+    expect(html).toContain('<strong>enum</strong>')
+  })
+})
+
 describe('glow', () => {
   test('wraps in code with language', () => {
     const html = glow('const a = 1', { language: 'js' })
