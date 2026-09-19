@@ -72,13 +72,13 @@ function stringPrefixAt(src: string, i: number): { q: string } | null {
   }
 
   if (!isAsciiLetter(c)) return null
-  let p = i
-  while (p < src.length && isAsciiLetter(src[p]!)) p++
-  const runLen = p - i
+  let unAscii = i
+  while (unAscii < src.length && isAsciiLetter(src[unAscii]!)) unAscii++
+  const runLen = unAscii - i
   if (runLen < 1 || runLen > 2) return null
-  const q = src[p]
+  const q = src[unAscii]
   if (q !== '"' && q !== "'") return null
-  for (let k = i; k < p; k++) {
+  for (let k = i; k < unAscii; k++) {
     if ('fFrRuUbB'.indexOf(src[k]!) === -1) return null
   }
   return { q }
