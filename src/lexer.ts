@@ -22,7 +22,7 @@ const ID_START = /[\p{L}_$]/u
 const ID_PART = /[\p{L}\p{N}_$]/u
 
 function isWs(c: string | undefined): boolean {
-  return c === ' ' || c === '\t' || c === '\n' || c === '\r' || c === '' || c === '\f'
+  return c === ' ' || c === '\t' || c === '\n' || c === '\r' || c === '\v' || c === '\f'
 }
 
 function isDigit(c: string | undefined): boolean {

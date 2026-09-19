@@ -96,7 +96,14 @@ const RAW = `
   begin end nil
 `
 
-export const KEYWORDS: ReadonlySet<string> = new Set(RAW.split(/\s+/).filter(Boolean))
+// The `//` section comments are stripped before splitting: otherwise the prose
+// itself lands in the set and `C`, `Go`, `Swift`, `control`, `subset`, … all
+// become keywords.
+export const KEYWORDS: ReadonlySet<string> = new Set(
+  RAW.replace(/^[ \t]*\/\/.*$/gm, '')
+    .split(/\s+/)
+    .filter(Boolean),
+)
 
 export function isKeyword(word: string): boolean {
   return KEYWORDS.has(word.toLowerCase())
