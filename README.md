@@ -27,7 +27,7 @@ console.log(answer)`
 
 const html = glow(code, { numbered: true })
 
-// → '<code><span>...</span>\n<span>...</span></code>'
+// → '<code><span class="glow-line">…</span>\n<span class="glow-line">…</span></code>'
 ```
 
 No `language` is needed. Drop the result into a page (e.g. inside a `<pre>`) and link a stylesheet:
@@ -36,16 +36,44 @@ No `language` is needed. Drop the result into a page (e.g. inside a `<pre>`) and
 <pre>${html}</pre>
 ```
 
+### Highlighting into an element you already own
+
+`glow()` returns a whole `<code>` element. When you already have that element and
+want to keep its own classes and attributes, take just the inside:
+
+```ts
+import { glowInner } from 'glowglow'
+
+codeEl.innerHTML = glowInner(code, { numbered: true })
+```
+
+### Keeping your own positions aligned
+
+`glow()` normalises CRLF and drops blank leading and trailing lines before it
+renders, so an offset in your source is not an offset in the output.
+`glowSource()` returns the text that is actually rendered, plus a mapper from
+your offsets into it. Use it instead of re-deriving the transformation — which
+is private, and may change — when you need to put your own markers back
+(elements carrying an `id`, search hits, …):
+
+```ts
+import { glowInner, glowSource } from 'glowglow'
+
+const { text, offset } = glowSource(code)
+codeEl.innerHTML = glowInner(code)
+// `text` is exactly what codeEl now contains, so offset(n) locates your marker
+```
+
 ## Options
 
 ```ts
 glow(code, {
   language: 'ts', // optional metadata only → <code language="ts">. Never affects output.
-  numbered: false, // wrap each line in a <span> so you can number lines yourself
+  numbered: false, // wrap each line in <span class="glow-line"> for css/syntax.css to number
 })
 ```
 
-`glow` also accepts an array of lines: `glow(['const a = 1', 'foo(a)'])`.
+`glow` and `glowInner` also accept an array of lines: `glow(['const a = 1', 'foo(a)'])`.
 
 ## What it understands (and what it won't)
 
@@ -93,12 +121,19 @@ pre {
 }
 ```
 
+Line numbers are scoped to `.glow-line`, the class emitted for
+`{ numbered: true }`. Without that option no `<span>` is emitted at all, so any
+spans of your own inside a `<pre>` (page-break anchors, search hits) are never
+numbered.
+
 ## Development
 
 ```bash
 pnpm install
-pnpm typecheck   # TypeScript 7
+pnpm typecheck   # tsc --noEmit
 pnpm test        # vitest
+pnpm coverage    # vitest + v8 coverage (100% on every metric)
+pnpm lint        # eslint (antfu config)
 pnpm build       # tsdown → dist/ (ESM, CJS, .d.ts)
 
 node preview/generate.mjs  # regenerate preview/preview.html from preview/samples/

@@ -27,7 +27,7 @@ pre {
     }
 
     /* with line numbers */
-    span & {
+    .glow-line & {
       margin-left: calc(-3.5em - var(--padd));
       padding-left: calc(3.5em + var(--padd));
 

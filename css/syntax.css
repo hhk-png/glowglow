@@ -1,5 +1,3 @@
-
-
 pre {
   background-color: var(--glow-bg-color, #20293A);
   color: var(--glow-base-color, #a2aab1);
@@ -16,6 +14,15 @@ pre {
     font-style: inherit;
     text-decoration: inherit
   }
+
+  /* A universal selector adds no specificity, so `pre *` scores the same as
+     normalize.css's `b, strong { font-weight: bolder }` — which then wins or
+     loses purely on stylesheet order, turning every keyword bold in bundles
+     that emit normalize last. Restating it with an element in the selector
+     makes the reset win regardless of order. (The browser's own `em, i {
+     font-style: italic }` needs no such treatment: user-agent declarations lose
+     to any author declaration.) */
+  b, strong { font-weight: 400 }
 
   /* primary accent color */
   b { color: var(--glow-primary-color, #7dd3fc) }
@@ -43,6 +50,10 @@ pre {
     font-size: inherit;
     vertical-align: inherit;
     font-style: italic;
+    /* Cancelling vertical-align alone leaves normalize.css's `sup { position:
+       relative; top: -.5em }` in place, which still lifts every comment. */
+    position: static;
+    top: 0;
   }
 
   /* special */
@@ -57,8 +68,10 @@ pre {
     margin: -.3em -.4em;
   }
 
-  /* line numbers */
-  span {
+  /* Line numbers apply only to the spans emitted for `numbered: true`, so a
+     caller's own <span>s inside a pre (page-break anchors, search hits) are
+     never numbered, and a span nested inside a line never double-counts. */
+  .glow-line {
     counter-increment: line-counter 1;
 
     &:before {
@@ -73,7 +86,7 @@ pre {
   }
 
   /* erroneous line number styling */
-  span:has(u):before {
+  .glow-line:has(u):before {
     background-color: var(--glow-error-color, red);
     border-radius: .2em;
     font-weight: bold;

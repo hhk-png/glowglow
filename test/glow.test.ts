@@ -1,6 +1,7 @@
 import type { GlowOptions } from '../src/index'
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { glow } from '../src/index'
+import { glow, glowInner, glowSource } from '../src/index'
 
 /** strip the outer <code…> wrapper so assertions read the inner body */
 function body(input: string | readonly string[], opts?: GlowOptions): string {
@@ -21,10 +22,10 @@ describe('glow', () => {
     expect(glow(['a', 'b'])).toBe('<code><b>a</b>\n<b>b</b></code>')
   })
 
-  it('numbered wraps each line in a <span>', () => {
+  it('numbered wraps each line in a classed <span>', () => {
     const html = glow('a\nb', { numbered: true })
-    expect(html).toContain('<span><b>a</b></span>')
-    expect(html).toContain('<span><b>b</b></span>')
+    expect(html).toContain('<span class="glow-line"><b>a</b></span>')
+    expect(html).toContain('<span class="glow-line"><b>b</b></span>')
   })
 
   it('normalises CRLF line endings', () => {
@@ -272,5 +273,98 @@ describe('line handling', () => {
   it('a lone zero is one number token, not an overruning radix literal', () => {
     expect(glow('0')).toBe('<code><em>0</em></code>')
     expect(glow('x = 0')).toBe('<code><b>x</b> <i>=</i> <em>0</em></code>')
+  })
+})
+
+describe('glowInner & glowSource', () => {
+  /** the text a piece of highlighted markup reproduces, tags stripped */
+  function textOf(html: string): string {
+    return html
+      .replace(/<\/?[a-z][^>]*>/g, '')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&amp;/g, '&')
+  }
+
+  it('glowInner is exactly the markup glow wraps in <code>', () => {
+    const code = 'const a = 1'
+    expect(glow(code)).toBe(`<code>${glowInner(code)}</code>`)
+    // language only annotates the <code> element, so the inner markup is identical
+    expect(glow(code, { language: 'ts' })).toBe(`<code language="ts">${glowInner(code)}</code>`)
+    expect(glowInner(code, { language: 'ts' })).toBe(glowInner(code))
+  })
+
+  it('glowInner returns nothing for blank input', () => {
+    expect(glowInner('')).toBe('')
+    expect(glowInner('\n\n')).toBe('')
+    expect(glow('\n\n')).toBe('')
+  })
+
+  it('numbered lines carry a class, so a caller\'s own spans are left alone', () => {
+    expect(glowInner('a\nb', { numbered: true })).toBe(
+      '<span class="glow-line"><b>a</b></span>\n<span class="glow-line"><b>b</b></span>',
+    )
+  })
+
+  it('glowSource reports the text that is actually rendered', () => {
+    expect(glowSource('a\r\nb').text).toBe('a\nb')
+    expect(glowSource('\n\n a \n\n').text).toBe(' a ')
+    expect(glowSource(['x', 'y']).text).toBe('x\ny')
+    expect(glowSource('').text).toBe('')
+  })
+
+  it('the rendered markup always reproduces glowSource().text verbatim', () => {
+    const sources = [
+      'const a = 1',
+      'a = "x & y < z"',
+      'a\r\nb\r\n\r\nc',
+      '\n\n  indented\n  ',
+      'a\n\nb',
+      '`t${x}` @dec // c',
+      '中文 = 值',
+    ]
+    for (const src of sources) {
+      expect(textOf(glowInner(src))).toBe(glowSource(src).text)
+      expect(textOf(glowInner(src, { numbered: true }))).toBe(glowSource(src).text)
+    }
+  })
+
+  it('maps offsets through CRLF normalisation', () => {
+    const { offset } = glowSource('a\r\nb\r\nc')
+    expect(offset(0)).toBe(0) // a
+    expect(offset(1)).toBe(1)
+    expect(offset(3)).toBe(2) // b, one character shorter than its raw index
+    expect(offset(4)).toBe(3)
+    expect(offset(6)).toBe(4) // c
+    expect(offset(7)).toBe(5) // end of text
+  })
+
+  it('maps offsets through the blank-line trim', () => {
+    const { text, offset } = glowSource('\n\na\nb')
+    expect(text).toBe('a\nb')
+    expect(offset(0)).toBe(0) // inside the trimmed leading blank lines
+    expect(offset(1)).toBe(0)
+    expect(offset(2)).toBe(0) // a
+    expect(offset(4)).toBe(2) // b
+    expect(offset(5)).toBe(3)
+  })
+
+  it('clamps offsets that fall outside the text', () => {
+    const { text, offset } = glowSource('a\n\n')
+    expect(text).toBe('a')
+    expect(offset(-5)).toBe(0)
+    expect(offset(99)).toBe(text.length)
+  })
+
+  it('the class the stylesheet numbers is the one we emit', () => {
+    const css = readFileSync(new URL('../css/syntax.css', import.meta.url), 'utf8')
+    const numbered = glowInner('a', { numbered: true })
+    // the stylesheet numbers `.glow-line`, and that is what a numbered line is
+    expect(css).toContain('.glow-line')
+    expect(numbered).toContain('class="glow-line"')
+    // without `numbered` no span is emitted at all, so a caller's own spans can
+    // never be picked up by the numbering rules
+    expect(glowInner('a')).not.toContain('<span')
   })
 })
