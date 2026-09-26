@@ -257,3 +257,20 @@ describe('decorators and unicode', () => {
     )
   })
 })
+
+describe('line handling', () => {
+  test('trailing and leading blank lines are trimmed', () => {
+    expect(glow('a\n')).toBe('<code><b>a</b></code>')
+    expect(glow('\na')).toBe('<code><b>a</b></code>')
+  })
+
+  test('blank lines in the middle are preserved', () => {
+    expect(glow('a\n\nb')).toBe('<code><b>a</b>\n\n<b>b</b></code>')
+    expect(glow('a\n \nb')).toBe('<code><b>a</b>\n \n<b>b</b></code>')
+  })
+
+  test('a lone zero is one number token, not an overruning radix literal', () => {
+    expect(glow('0')).toBe('<code><em>0</em></code>')
+    expect(glow('x = 0')).toBe('<code><b>x</b> <i>=</i> <em>0</em></code>')
+  })
+})

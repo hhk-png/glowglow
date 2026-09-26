@@ -109,3 +109,56 @@ describe('classify — semantic colour tags', () => {
     expect(jsx).toContain('<strong>Comp</strong>')
   })
 })
+
+describe('classify — candidate rejection', () => {
+  test('a trailing < with nothing after it is just an operator', () => {
+    expect(html('a <')).toBe('<b>a</b> <i>&lt;</i>')
+  })
+
+  test('< followed by / is only a close tag when a name is glued to it', () => {
+    // no element name right after `</`, so the region is rejected
+    expect(html('</ >')).toBe('<i>&lt;</i><i>/</i> <i>&gt;</i>')
+  })
+
+  test('structural brackets inside a candidate tag reject it', () => {
+    expect(html('a <b (c')).toBe('<b>a</b> <i>&lt;</i><b>b</b> <i>(</i><b>c</b>')
+    expect(html('<a <b')).toBe('<i>&lt;</i><b>a</b> <i>&lt;</i><b>b</b>')
+    expect(html('<a [b')).toBe('<i>&lt;</i><b>a</b> <i>[</i><b>b</b>')
+  })
+
+  test('a comment inside a candidate tag rejects it', () => {
+    expect(html('<div // c')).toBe('<i>&lt;</i><b>div</b> <sup>// c</sup>')
+  })
+
+  test('a / that is not glued to > is not a self-closing marker', () => {
+    // whitespace between slash and bracket: br is still a known tag (so <strong>),
+    // but the region is not self-closing — it only ends at the standalone >
+    expect(html('<br / >')).toBe('<i>&lt;</i><strong>br</strong> <i>/</i> <i>&gt;</i>')
+  })
+})
+
+describe('classify — prose detection between real tags', () => {
+  test('a code-ish operator in the gap keeps it code-coloured', () => {
+    const h = html('<p>a</p> = <b>c</b>')
+    expect(h).toContain('<i>=</i>')
+    expect(h).toContain('<strong>p</strong>')
+    expect(h).toContain('<strong>b</strong>')
+  })
+
+  test('a decorator in the gap keeps it code-coloured', () => {
+    const h = html('<p>a</p> @x <b>c</b>')
+    expect(h).toContain('<label>@x</label>')
+  })
+
+  test('numbers and strings in the gap are still separated as prose candidates', () => {
+    const h = html('<p>a</p> 1 x "s" <b>c</b>')
+    expect(h).toContain('<em>1</em>')
+    expect(h).toContain('<em>s</em>')
+  })
+
+  test('words and whitespace in the gap are left uncoloured', () => {
+    expect(html('<p>Hello world</p>')).toBe(
+      '<i>&lt;</i><strong>p</strong><i>&gt;</i>Hello world<i>&lt;</i><i>/</i><strong>p</strong><i>&gt;</i>',
+    )
+  })
+})

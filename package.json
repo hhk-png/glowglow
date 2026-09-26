@@ -30,6 +30,7 @@
     "build": "tsdown",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "coverage": "vitest run --coverage",
     "release": "bumpp --push",
     "prepublishOnly": "pnpm build"
   },
@@ -57,6 +58,7 @@
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
+    "@vitest/coverage-v8": "5.0.0",
     "bumpp": "^12.3.0",
     "tsdown": "^0.23.0",
     "typescript": "^7.0.2",

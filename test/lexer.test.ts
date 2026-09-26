@@ -123,3 +123,71 @@ describe('lex — kinds & boundaries', () => {
     expect(shape('"""doc\nx\n"""')).toBe('str:"\\"\\"\\"" str:"doc\\nx\\n" str:"\\"\\"\\""')
   })
 })
+
+describe('lex — boundary guards', () => {
+  test('a quote prefix must start a fresh word', () => {
+    // 10u32 ends a number immediately before $", so the $ is not a C# string prefix
+    expect(shape('10u32$"x"')).toBe('num:"10u32" word:"$" str:"\\"" str:"x" str:"\\""')
+    // a 2-letter run that is not r/f/b/u is a plain word, not a prefix
+    expect(shape('ab"x"')).toBe('word:"ab" str:"\\"" str:"x" str:"\\""')
+  })
+
+  test('non-interpolating prefixes r/b/u do not open a brace interpolation', () => {
+    expect(shape('r"a"')).toBe('str:"r\\"" str:"a" str:"\\""')
+    expect(shape('r"""a"""')).toBe('str:"r\\"\\"\\"" str:"a" str:"\\"\\"\\""')
+  })
+
+  test('{{ }} escapes a literal brace inside an interpolating prefix', () => {
+    expect(shape('f"a{{b}}c"')).toBe('str:"f\\"" str:"a{{b}}c" str:"\\""')
+  })
+
+  test('a lone quote inside a triple-quoted literal does not close it', () => {
+    expect(shape('"""a"b"""')).toBe('str:"\\"\\"\\"" str:"a\\"b" str:"\\"\\"\\""')
+  })
+
+  test('an unterminated string at end of input still emits its text', () => {
+    expect(shape('"abc')).toBe('str:"\\"" str:"abc"')
+  })
+
+  test('@ not followed by an identifier is an operator', () => {
+    expect(shape('@ x')).toBe('op:"@" ws:" " word:"x"')
+  })
+
+  test('nested braces inside ${} track interpolation depth', () => {
+    expect(shape('`${{a}}`')).toBe('str:"`" op:"${" op:"{" word:"a" op:"}" op:"}" str:"`"')
+  })
+
+  test('a comment marker inside an operator run ends the run', () => {
+    expect(shape('a =// b')).toBe('word:"a" ws:" " op:"=" comment:"// b"')
+    expect(shape('a =<!-- x -->')).toBe('word:"a" ws:" " op:"=" comment:"<!-- x -->"')
+  })
+
+  test('an unterminated lua long comment runs to end of input', () => {
+    expect(shape('--[[ doc')).toBe('comment:"--[[ doc"')
+  })
+
+  test('an unterminated html comment runs to end of input', () => {
+    expect(shape('<!-- doc')).toBe('comment:"<!-- doc"')
+  })
+
+  test('numbers at the end of input never overrun the source', () => {
+    for (const s of ['0', '0.5', '09', '1e+', '42']) {
+      for (const t of lex(s)) {
+        expect(t.end).toBeLessThanOrEqual(s.length)
+        expect(t.start).toBeLessThan(t.end)
+      }
+      expect(lex(s).map(t => tokenText(s, t)).join('')).toBe(s)
+    }
+  })
+
+  test('exponents with and without a sign or digits', () => {
+    expect(shape('1e5')).toBe('num:"1e5"')
+    expect(shape('1e+5')).toBe('num:"1e+5"')
+    expect(shape('1e+')).toBe('num:"1e" op:"+"')
+  })
+
+  test('underscores are part of a numeric literal on both sides of the dot', () => {
+    expect(shape('1_0.5')).toBe('num:"1_0.5"')
+    expect(shape('1.5_0')).toBe('num:"1.5_0"')
+  })
+})
