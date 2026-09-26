@@ -30,7 +30,7 @@
     "build": "tsdown",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "release": "bumpp --execute \"npm publish\"",
+    "release": "bumpp --push",
     "prepublishOnly": "pnpm build"
   },
   "keywords": [
