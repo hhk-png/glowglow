@@ -52,11 +52,8 @@
     "test": "vitest run",
     "coverage": "vitest run --coverage",
     "release": "bumpp --push",
-    "prepublishOnly": "pnpm build"
-  },
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://registry.npmjs.org/"
+    "prepublishOnly": "pnpm build",
+    "prepare": "simple-git-hooks"
   },
   "devDependencies": {
     "@antfu/eslint-config": "^9.5.1",
@@ -64,8 +61,20 @@
     "@vitest/coverage-v8": "5.0.0",
     "bumpp": "^12.3.0",
     "eslint": "^10.11.0",
+    "lint-staged": "^17.5.1",
+    "simple-git-hooks": "^2.14.0",
     "tsdown": "^0.23.0",
     "typescript": "^6.0.3",
     "vitest": "^5.0.0"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "pnpm lint-staged"
+  },
+  "lint-staged": {
+    "*": "eslint . --fix --cache"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
   }
 }
