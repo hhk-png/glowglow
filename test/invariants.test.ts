@@ -1,11 +1,15 @@
-import { expect, test } from 'vitest'
-import { lex } from '../src/lexer'
+import { expect, it } from 'vitest'
 import { glow } from '../src/index'
+import { lex } from '../src/lexer'
+
+// how many random sources the invariant check walks
+const ITERATIONS = 20000
 
 // deterministic PRNG so a failure is reproducible
 function mulberry32(a: number) {
   return () => {
-    a |= 0; a = (a + 0x6D2B79F5) | 0
+    a |= 0
+    a = (a + 0x6D2B79F5) | 0
     let t = Math.imul(a ^ (a >>> 15), 1 | a)
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296
@@ -27,12 +31,12 @@ function normalize(src: string): string {
   return lines.join('\n')
 }
 
-test('invariant: tokens are contiguous, in-bounds and cover the whole source', () => {
+it('invariant: tokens are contiguous, in-bounds and cover the whole source', () => {
   const rnd = mulberry32(0xC0FFEE)
   const failures: string[] = []
   let checked = 0
 
-  for (let iter = 0; iter < 20000; iter++) {
+  for (let iter = 0; iter < ITERATIONS; iter++) {
     const len = Math.floor(rnd() * 40)
     let src = ''
     for (let k = 0; k < len; k++) src += ALPHA[Math.floor(rnd() * ALPHA.length)]
@@ -40,7 +44,8 @@ test('invariant: tokens are contiguous, in-bounds and cover the whole source', (
     const toks = lex(src)
     checked++
 
-    if (toks.length && toks[0]!.start !== 0) failures.push(`first token does not start at 0: ${JSON.stringify(src)}`)
+    if (toks.length && toks[0]!.start !== 0)
+      failures.push(`first token does not start at 0: ${JSON.stringify(src)}`)
     for (let i = 0; i < toks.length; i++) {
       const t = toks[i]!
       if (t.start < 0 || t.end > src.length || t.start >= t.end) {
@@ -51,8 +56,10 @@ test('invariant: tokens are contiguous, in-bounds and cover the whole source', (
       }
     }
     if (toks.length) {
-      if (toks[toks.length - 1]!.end !== src.length) failures.push(`last token does not reach end: ${JSON.stringify(src)}`)
-    } else if (src.length > 0) {
+      if (toks[toks.length - 1]!.end !== src.length)
+        failures.push(`last token does not reach end: ${JSON.stringify(src)}`)
+    }
+    else if (src.length > 0) {
       failures.push(`empty token list for non-empty source ${JSON.stringify(src)}`)
     }
 
@@ -61,7 +68,8 @@ test('invariant: tokens are contiguous, in-bounds and cover the whole source', (
     let got: string
     try {
       got = stripTags(glow(src))
-    } catch (e) {
+    }
+    catch (e) {
       failures.push(`glow threw on ${JSON.stringify(src)}: ${String(e)}`)
       continue
     }
@@ -70,7 +78,8 @@ test('invariant: tokens are contiguous, in-bounds and cover the whole source', (
     }
   }
 
-  console.log(`checked ${checked} random sources, ${failures.length} failures`)
-  if (failures.length) console.log(failures.slice(0, 8).join('\n'))
+  // Reports every counter-example at once rather than stopping at the first,
+  // and the count assertion guards against the loop silently not running.
   expect(failures).toEqual([])
+  expect(checked).toBe(ITERATIONS)
 })

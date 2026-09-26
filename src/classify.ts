@@ -12,9 +12,9 @@
       is left uncoloured; code around JSX braces stays code-coloured.
 */
 
+import type { Kind, Token } from './lexer'
 import { HTML_TAGS, isKeyword } from './keywords'
 import { tokenText } from './lexer'
-import type { Kind, Token } from './lexer'
 
 export interface ClassifiedToken {
   kind: Kind
@@ -41,21 +41,27 @@ const CODEISH_OP = /[=;<>()[\]]/
 export function classify(src: string, toks: Token[]): ClassifiedToken[] {
   const n = toks.length
   const text = (tok: Token) => tokenText(src, tok)
-  const role: Array<Role | null> = new Array(n).fill(null)
+  // eslint-disable-next-line e18e/prefer-array-fill -- its suggested `.fill()` form widens to unknown[]
+  const role: Array<Role | null> = Array.from({ length: n }, () => null)
 
   // --- find candidate tag regions -------------------------------------------
   const nextNW = (idx: number): number => {
-    for (let k = idx + 1; k < n; k++) if (toks[k]!.kind !== 'ws') return k
+    for (let k = idx + 1; k < n; k++) {
+      if (toks[k]!.kind !== 'ws')
+        return k
+    }
     return -1
   }
 
   const regions: Region[] = []
   for (let idx = 0; idx < n; idx++) {
     const t = toks[idx]!
-    if (t.kind !== 'op' || text(t) !== '<') continue
+    if (t.kind !== 'op' || text(t) !== '<')
+      continue
 
     const j = nextNW(idx)
-    if (j < 0) continue
+    if (j < 0)
+      continue
     const jt = toks[j]!
 
     let nameIdx = -1
@@ -64,14 +70,16 @@ export function classify(src: string, toks: Token[]): ClassifiedToken[] {
     if (jt.kind === 'word' && jt.start === t.end) {
       open = true
       nameIdx = j
-    } else if (jt.kind === 'op' && text(jt) === '/' && jt.start === t.end) {
+    }
+    else if (jt.kind === 'op' && text(jt) === '/' && jt.start === t.end) {
       const w = nextNW(j)
       if (w >= 0 && toks[w]!.kind === 'word' && toks[w]!.start === jt.end) {
         closer = true
         nameIdx = w
       }
     }
-    if (nameIdx < 0) continue
+    if (nameIdx < 0)
+      continue
 
     // scan forward for the '>' that ends this tag
     let term = -1
@@ -79,7 +87,8 @@ export function classify(src: string, toks: Token[]): ClassifiedToken[] {
     let invalid = false
     for (let m = nameIdx + 1; m < n; m++) {
       const mt = toks[m]!
-      if (mt.kind === 'ws') continue
+      if (mt.kind === 'ws')
+        continue
       const s = text(mt)
       if (mt.kind === 'op') {
         if (s === '>') {
@@ -100,11 +109,13 @@ export function classify(src: string, toks: Token[]): ClassifiedToken[] {
         }
         continue
       }
-      if (mt.kind === 'word' || mt.kind === 'str' || mt.kind === 'num') continue
+      if (mt.kind === 'word' || mt.kind === 'str' || mt.kind === 'num')
+        continue
       invalid = true
       break
     }
-    if (invalid || term < 0) continue
+    if (invalid || term < 0)
+      continue
     regions.push({ from: idx, nameIdx, to: term, open, closer, selfClose })
   }
 
@@ -115,12 +126,17 @@ export function classify(src: string, toks: Token[]): ClassifiedToken[] {
     ;(r.closer ? closeNames : openNames).add(text(toks[r.nameIdx]!).toLowerCase())
   }
   const paired = new Set<string>()
-  for (const name of openNames) if (closeNames.has(name)) paired.add(name)
+  for (const name of openNames) {
+    if (closeNames.has(name))
+      paired.add(name)
+  }
 
   const isTag = (r: Region): boolean => {
     const name = text(toks[r.nameIdx]!).toLowerCase()
-    if (HTML_TAGS.has(name)) return true
-    if (paired.has(name)) return true
+    if (HTML_TAGS.has(name))
+      return true
+    if (paired.has(name))
+      return true
     return r.open && r.selfClose
   }
   const decided = regions.filter(isTag)
@@ -129,7 +145,8 @@ export function classify(src: string, toks: Token[]): ClassifiedToken[] {
     role[r.nameIdx] = 'name'
     if (r.open) {
       for (let m = r.nameIdx + 1; m < r.to; m++) {
-        if (toks[m]!.kind === 'word' && !role[m]) role[m] = 'attr'
+        if (toks[m]!.kind === 'word' && !role[m])
+          role[m] = 'attr'
       }
     }
   }
@@ -152,13 +169,15 @@ export function classify(src: string, toks: Token[]): ClassifiedToken[] {
         prose = false
         break
       }
-      if (mt.kind === 'word' || mt.kind === 'ws' || mt.kind === 'str' || mt.kind === 'num') continue
+      if (mt.kind === 'word' || mt.kind === 'ws' || mt.kind === 'str' || mt.kind === 'num')
+        continue
       prose = false
       break
     }
     if (prose) {
       for (let m = a.ti + 1; m < b.fi; m++) {
-        if (toks[m]!.kind === 'word') role[m] = 'text'
+        if (toks[m]!.kind === 'word')
+          role[m] = 'text'
       }
     }
   }
@@ -172,7 +191,8 @@ export function classify(src: string, toks: Token[]): ClassifiedToken[] {
   const keyIdx = new Set<number>()
   for (let i = 0; i < n; i++) {
     const t = toks[i]!
-    if (t.kind !== 'str') continue
+    if (t.kind !== 'str')
+      continue
     // every adjacent run of string tokens is consumed below via `i = j`, so the
     // loop only ever lands on the first token of a run
     let j = i
@@ -214,9 +234,15 @@ export function classify(src: string, toks: Token[]): ClassifiedToken[] {
         break
       case 'word': {
         const r = role[i]
-        if (r === 'name') tag = 'strong'
-        else if (r === 'attr') tag = 'b'
-        else if (r === 'text') tag = null
+        if (r === 'name') {
+          tag = 'strong'
+        }
+        else if (r === 'attr') {
+          tag = 'b'
+        }
+        else if (r === 'text') {
+          tag = null
+        }
         else {
           const w = text(t)
           const prev = t.start > 0 ? src[t.start - 1] : ''

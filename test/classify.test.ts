@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { classify } from '../src/classify'
 import { lex } from '../src/lexer'
 
@@ -12,28 +12,31 @@ function html(src: string): string {
   let out = ''
   let cursor = 0
   for (const t of toks) {
-    if (t.start < cursor) throw new Error('overlapping tokens')
-    if (t.start > cursor) out += esc(src.slice(cursor, t.start))
+    if (t.start < cursor)
+      throw new Error('overlapping tokens')
+    if (t.start > cursor)
+      out += esc(src.slice(cursor, t.start))
     const txt = src.slice(t.start, t.end)
     out += t.tag ? `<${t.tag}>${esc(txt)}</${t.tag}>` : esc(txt)
     cursor = t.end
   }
-  if (cursor < src.length) out += esc(src.slice(cursor))
+  if (cursor < src.length)
+    out += esc(src.slice(cursor))
   return out
 }
 
 describe('classify — semantic colour tags', () => {
-  test('keywords -> strong, other identifiers -> b', () => {
+  it('keywords -> strong, other identifiers -> b', () => {
     expect(html('const x = payload')).toContain('<strong>const</strong>')
     expect(html('const x = payload')).toContain('<b>payload</b>')
   })
 
-  test('property access after a dot stays a plain identifier', () => {
+  it('property access after a dot stays a plain identifier', () => {
     expect(html('a.type')).toContain('<b>type</b>')
     expect(html('a.type')).not.toContain('<strong>type</strong>')
   })
 
-  test('atomic kinds map to the fixed tag vocabulary', () => {
+  it('atomic kinds map to the fixed tag vocabulary', () => {
     const h = html('x = 1 // c') // word b, op i, num em, comment sup
     expect(h).toContain('<b>x</b>')
     expect(h).toContain('<i>=</i>')
@@ -42,42 +45,42 @@ describe('classify — semantic colour tags', () => {
     expect(html('@dec')).toContain('<label>@dec</label>')
   })
 
-  test('markup: known html tag is a tag even without a close', () => {
+  it('markup: known html tag is a tag even without a close', () => {
     const h = html('<div class="x">')
     expect(h).toContain('<strong>div</strong>')
     expect(h).toContain('<b>class</b>')
     expect(h).toContain('<em>"</em>')
   })
 
-  test('markup: self-closing unknown element is a tag', () => {
+  it('markup: self-closing unknown element is a tag', () => {
     expect(html('<Foo />')).toContain('<strong>Foo</strong>')
   })
 
-  test('markup: unmatched custom element is NOT a tag', () => {
+  it('markup: unmatched custom element is NOT a tag', () => {
     expect(html('<Foo>')).not.toContain('<strong>Foo</strong>')
   })
 
-  test('markup: matched pair promotes an unknown element to a tag', () => {
+  it('markup: matched pair promotes an unknown element to a tag', () => {
     const h = html('<Foo>hi</Foo>')
     // both the opener and the closer names become <strong>
     expect(h.split('<strong>Foo</strong>').length - 1).toBe(2)
     expect(h).toContain('>hi<')
   })
 
-  test('ts generic Foo<T> is never promoted to markup', () => {
+  it('ts generic Foo<T> is never promoted to markup', () => {
     const h = html('const v = Foo<T>')
     expect(h).not.toContain('<strong>Foo</strong>')
     expect(h).not.toContain('<strong>T</strong>')
   })
 
-  test('comparisons stay operators + identifiers', () => {
+  it('comparisons stay operators + identifiers', () => {
     const h = html('if (a < b)')
     expect(h).not.toContain('<strong>a')
     expect(h).not.toContain('<strong>b')
     expect(h).toContain('<i>&lt;</i>')
   })
 
-  test('json object keys take the identifier colour, values stay strings', () => {
+  it('json object keys take the identifier colour, values stay strings', () => {
     const h = html('{ "name": "ana", "n": 1 }')
     expect(h).toContain('<b>"</b><b>name</b><b>"</b>')
     expect(h).toContain('<em>"</em><em>ana</em><em>"</em>') // value unchanged
@@ -85,18 +88,18 @@ describe('classify — semantic colour tags', () => {
     expect(h).not.toContain('<em>"</em><em>name</em><em>"</em>') // key not string-coloured
   })
 
-  test('a string before a colon that is not an object key stays <em>', () => {
+  it('a string before a colon that is not an object key stays <em>', () => {
     expect(html('x = cond ? "a" : "b"')).toContain('<em>"</em><em>a</em><em>"</em>')
     expect(html('x = cond ? "a" : "b"')).not.toContain('<b>a</b>')
   })
 
-  test('quoted keys work in object literals next to plain ones', () => {
+  it('quoted keys work in object literals next to plain ones', () => {
     const h = html('{ "a": 1, b: 2 }')
     expect(h).toContain('<b>"</b><b>a</b><b>"</b>')
     expect(h).toContain('<b>b</b>') // unquoted key was already an identifier
   })
 
-  test('prose between matched tags is left uncoloured; code between braces is not', () => {
+  it('prose between matched tags is left uncoloured; code between braces is not', () => {
     const tag = html('<p>Hello</p>')
     // tag name strong, prose plain
     expect(tag).toContain('<strong>p</strong>')
@@ -111,26 +114,26 @@ describe('classify — semantic colour tags', () => {
 })
 
 describe('classify — candidate rejection', () => {
-  test('a trailing < with nothing after it is just an operator', () => {
+  it('a trailing < with nothing after it is just an operator', () => {
     expect(html('a <')).toBe('<b>a</b> <i>&lt;</i>')
   })
 
-  test('< followed by / is only a close tag when a name is glued to it', () => {
+  it('< followed by / is only a close tag when a name is glued to it', () => {
     // no element name right after `</`, so the region is rejected
     expect(html('</ >')).toBe('<i>&lt;</i><i>/</i> <i>&gt;</i>')
   })
 
-  test('structural brackets inside a candidate tag reject it', () => {
+  it('structural brackets inside a candidate tag reject it', () => {
     expect(html('a <b (c')).toBe('<b>a</b> <i>&lt;</i><b>b</b> <i>(</i><b>c</b>')
     expect(html('<a <b')).toBe('<i>&lt;</i><b>a</b> <i>&lt;</i><b>b</b>')
     expect(html('<a [b')).toBe('<i>&lt;</i><b>a</b> <i>[</i><b>b</b>')
   })
 
-  test('a comment inside a candidate tag rejects it', () => {
+  it('a comment inside a candidate tag rejects it', () => {
     expect(html('<div // c')).toBe('<i>&lt;</i><b>div</b> <sup>// c</sup>')
   })
 
-  test('a / that is not glued to > is not a self-closing marker', () => {
+  it('a / that is not glued to > is not a self-closing marker', () => {
     // whitespace between slash and bracket: br is still a known tag (so <strong>),
     // but the region is not self-closing — it only ends at the standalone >
     expect(html('<br / >')).toBe('<i>&lt;</i><strong>br</strong> <i>/</i> <i>&gt;</i>')
@@ -138,25 +141,25 @@ describe('classify — candidate rejection', () => {
 })
 
 describe('classify — prose detection between real tags', () => {
-  test('a code-ish operator in the gap keeps it code-coloured', () => {
+  it('a code-ish operator in the gap keeps it code-coloured', () => {
     const h = html('<p>a</p> = <b>c</b>')
     expect(h).toContain('<i>=</i>')
     expect(h).toContain('<strong>p</strong>')
     expect(h).toContain('<strong>b</strong>')
   })
 
-  test('a decorator in the gap keeps it code-coloured', () => {
+  it('a decorator in the gap keeps it code-coloured', () => {
     const h = html('<p>a</p> @x <b>c</b>')
     expect(h).toContain('<label>@x</label>')
   })
 
-  test('numbers and strings in the gap are still separated as prose candidates', () => {
+  it('numbers and strings in the gap are still separated as prose candidates', () => {
     const h = html('<p>a</p> 1 x "s" <b>c</b>')
     expect(h).toContain('<em>1</em>')
     expect(h).toContain('<em>s</em>')
   })
 
-  test('words and whitespace in the gap are left uncoloured', () => {
+  it('words and whitespace in the gap are left uncoloured', () => {
     expect(html('<p>Hello world</p>')).toBe(
       '<i>&lt;</i><strong>p</strong><i>&gt;</i>Hello world<i>&lt;</i><i>/</i><strong>p</strong><i>&gt;</i>',
     )

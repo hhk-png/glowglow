@@ -17,9 +17,9 @@
   <sup>, decorators <label>, operators/brackets <i>.
 */
 
+import type { ClassifiedToken } from './classify'
 import { classify } from './classify'
 import { lex } from './lexer'
-import type { ClassifiedToken } from './classify'
 
 export interface GlowOptions {
   /** Metadata only — written to the output <code language="…">, never read by the engine. */
@@ -38,8 +38,10 @@ function esc(str: string): string {
 function renderLine(src: string, toks: ClassifiedToken[], ls: number, le: number): string {
   const out: string[] = []
   for (const t of toks) {
-    if (t.end <= ls) continue
-    if (t.start >= le) break
+    if (t.end <= ls)
+      continue
+    if (t.start >= le)
+      break
     const s = Math.max(ls, t.start)
     const e = Math.min(le, t.end)
     if (s < e) {
@@ -57,7 +59,8 @@ export function glow(input: string | readonly string[], opts: GlowOptions = {}):
   const lines = text.split('\n')
   while (lines.length && lines[0] === '') lines.shift()
   while (lines.length && lines[lines.length - 1] === '') lines.pop()
-  if (!lines.length) return ''
+  if (!lines.length)
+    return ''
 
   const src = lines.join('\n')
   const toks = classify(src, lex(src))

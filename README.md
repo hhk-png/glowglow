@@ -40,7 +40,7 @@ No `language` is needed. Drop the result into a page (e.g. inside a `<pre>`) and
 
 ```ts
 glow(code, {
-  language: 'ts',  // optional metadata only → <code language="ts">. Never affects output.
+  language: 'ts', // optional metadata only → <code language="ts">. Never affects output.
   numbered: false, // wrap each line in a <span> so you can number lines yourself
 })
 ```

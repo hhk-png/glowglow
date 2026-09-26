@@ -62,24 +62,30 @@ type Frame = StrFrame | InterpFrame
 function stringPrefixAt(src: string, i: number): { q: string } | null {
   const c = src[i]!
   // must begin a fresh word
-  if (i > 0 && ID_PART.test(src[i - 1]!)) return null
+  if (i > 0 && ID_PART.test(src[i - 1]!))
+    return null
 
   // C# / bash style $"..."
   if (c === '$') {
     const q = src[i + 1]
-    if (q === '"' || q === "'") return { q }
+    if (q === '"' || q === '\'')
+      return { q }
     return null
   }
 
-  if (!isAsciiLetter(c)) return null
+  if (!isAsciiLetter(c))
+    return null
   let unAscii = i
   while (unAscii < src.length && isAsciiLetter(src[unAscii]!)) unAscii++
   const runLen = unAscii - i
-  if (runLen < 1 || runLen > 2) return null
+  if (runLen < 1 || runLen > 2)
+    return null
   const q = src[unAscii]
-  if (q !== '"' && q !== "'") return null
+  if (q !== '"' && q !== '\'')
+    return null
   for (let k = i; k < unAscii; k++) {
-    if ('fFrRuUbB'.indexOf(src[k]!) === -1) return null
+    if (!'fFrRuUbB'.includes(src[k]!))
+      return null
   }
   return { q }
 }
@@ -87,11 +93,14 @@ function stringPrefixAt(src: string, i: number): { q: string } | null {
 // A prefixed string interpolates on {…} when it is a C# "$" prefix or a python
 // f-string (the letters contain f/F). Plain r/b/u prefixes do not interpolate.
 function isBraceInterp(src: string, start: number, q: string): boolean {
-  if (src[start] === '$') return q === '"'
+  if (src[start] === '$')
+    return q === '"'
   for (let k = start; k < src.length; k++) {
     const ch = src[k]!
-    if (ch === q) break
-    if (ch === 'f' || ch === 'F') return true
+    if (ch === q)
+      break
+    if (ch === 'f' || ch === 'F')
+      return true
   }
   return false
 }
@@ -100,7 +109,8 @@ export function lex(src: string): Token[] {
   const tokens: Token[] = []
   const len = src.length
   const emit = (kind: Kind, start: number, end: number) => {
-    if (end > start) tokens.push({ kind, start, end })
+    if (end > start)
+      tokens.push({ kind, start, end })
   }
   const stack: Frame[] = []
   const top = (): Frame | undefined => stack[stack.length - 1]
@@ -251,10 +261,10 @@ export function lex(src: string): Token[] {
     // decrements (a--, --x, x = a--) stay operators.
     const prevC = i > 0 ? src[i - 1] : ''
     if (
-      c === '-' &&
-      src[i + 1] === '-' &&
-      (prevC === '' || isWs(prevC)) &&
-      (i + 2 >= len || isWs(src[i + 2]!))
+      c === '-'
+      && src[i + 1] === '-'
+      && (prevC === '' || isWs(prevC))
+      && (i + 2 >= len || isWs(src[i + 2]!))
     ) {
       let j = i + 2
       while (j < len && src[j] !== '\n') j++
@@ -272,7 +282,7 @@ export function lex(src: string): Token[] {
     }
 
     // single / double quote strings (plain or triple; prefixed f"/$" handled below)
-    if (c === '"' || c === "'") {
+    if (c === '"' || c === '\'') {
       const triple = src[i + 1] === c && src[i + 2] === c
       const span = triple ? 3 : 1
       emit('str', i, i + span) // opening quote(s)
@@ -331,10 +341,13 @@ export function lex(src: string): Token[] {
     if (STRUCTURAL.has(c)) {
       const t = top()
       if (c === '{') {
-        if (t && t.kind === 'interp') t.depth++
-      } else if (c === '}') {
+        if (t && t.kind === 'interp')
+          t.depth++
+      }
+      else if (c === '}') {
         if (t && t.kind === 'interp') {
-          if (t.depth > 1) t.depth--
+          if (t.depth > 1)
+            t.depth--
           else stack.pop()
         }
       }
@@ -348,12 +361,15 @@ export function lex(src: string): Token[] {
       let j = i
       while (j < len && OP_RUN.has(src[j]!)) {
         const ch = src[j]!
-        if (ch === '/' && (src[j + 1] === '/' || src[j + 1] === '*')) break
-        if (ch === '<' && src.startsWith('<!--', j)) break
+        if (ch === '/' && (src[j + 1] === '/' || src[j + 1] === '*'))
+          break
+        if (ch === '<' && src.startsWith('<!--', j))
+          break
         // never glue '<' with a following '/' — </name must stay three pieces
         // so classify can recognise closing HTML/XML tags. Only when the '<' is
         // part of this run (j > i), not when a fresh run begins at the '/'.
-        if (ch === '/' && j - 1 >= i && src[j - 1] === '<') break
+        if (ch === '/' && j - 1 >= i && src[j - 1] === '<')
+          break
         j++
       }
       emit('op', i, j)
@@ -382,12 +398,13 @@ function scanNumber(src: string, start: number): number {
   const nx = src[i + 1]
   if (c === '0' && nx !== undefined && 'xXbBoO'.includes(nx)) {
     i += 2
-    while (i < len && /[0-9a-zA-Z_]/.test(src[i]!)) i++
+    while (i < len && /\w/.test(src[i]!)) i++
     return i
   }
 
   // leading '.5'
-  if (c === '.') i++
+  if (c === '.')
+    i++
   while (i < len && (isDigit(src[i]!) || src[i] === '_')) i++
 
   // fraction
@@ -399,7 +416,8 @@ function scanNumber(src: string, start: number): number {
   // exponent
   if (src[i] === 'e' || src[i] === 'E') {
     let j = i + 1
-    if (src[j] === '+' || src[j] === '-') j++
+    if (src[j] === '+' || src[j] === '-')
+      j++
     if (isDigit(src[j])) {
       i = j
       while (i < len && (isDigit(src[i]!) || src[i] === '_')) i++
@@ -421,11 +439,13 @@ function scanNumber(src: string, start: number): number {
 // byte offset just past the matching "]]"/"]=]"/…, or -1 when it is not a long
 // bracket. Used only after "--" so it can never collide with code.
 function luaBlockEnd(src: string, from: number): number {
-  if (src[from] !== '[') return -1
+  if (src[from] !== '[')
+    return -1
   let k = from + 1
   while (src[k] === '=') k++
-  if (src[k] !== '[') return -1
-  const close = ']' + src.slice(from + 1, k) + ']'
+  if (src[k] !== '[')
+    return -1
+  const close = `]${src.slice(from + 1, k)}]`
   const hit = src.indexOf(close, k + 1)
   return hit === -1 ? src.length : hit + close.length
 }
