@@ -91,15 +91,8 @@ export function classify(src: string, toks: Token[]): ClassifiedToken[] {
           term = m
           break
         }
-        if (s === '/') {
-          const nn = nextNW(m)
-          if (nn >= 0 && toks[nn]!.kind === 'op' && text(toks[nn]!) === '>' && toks[nn]!.start === mt.end) {
-            selfClose = true
-            term = nn
-            break
-          }
-          continue
-        }
+        // a lone '/' (an unquoted url, say) is attribute noise — `/>` always
+        // arrives as one token — so it falls through to the check below.
         // an attribute operator ( = : . ? - … ) is fine; anything structural is not
         if (s.includes('<') || /[()[\]]/.test(s)) {
           invalid = true
@@ -151,7 +144,6 @@ export function classify(src: string, toks: Token[]): ClassifiedToken[] {
   for (let g = 0; g < intervals.length - 1; g++) {
     const a = intervals[g]!
     const b = intervals[g + 1]!
-    if (a.s >= b.s) continue
 
     let prose = true
     for (let m = a.ti + 1; m < b.fi; m++) {
@@ -181,7 +173,8 @@ export function classify(src: string, toks: Token[]): ClassifiedToken[] {
   for (let i = 0; i < n; i++) {
     const t = toks[i]!
     if (t.kind !== 'str') continue
-    if (i > 0 && toks[i - 1]!.kind === 'str' && toks[i - 1]!.end === t.start) continue
+    // every adjacent run of string tokens is consumed below via `i = j`, so the
+    // loop only ever lands on the first token of a run
     let j = i
     while (j + 1 < n && toks[j + 1]!.kind === 'str' && toks[j + 1]!.start === toks[j]!.end) j++
     let k = j + 1

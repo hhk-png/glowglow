@@ -32,25 +32,21 @@ function esc(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
+// lex() emits contiguous tokens that fully cover the source, so every byte of a
+// line is claimed by exactly one token — no gaps to fill in and nothing left over
+// at the end of the line.
 function renderLine(src: string, toks: ClassifiedToken[], ls: number, le: number): string {
   const out: string[] = []
-  let cursor = ls
   for (const t of toks) {
     if (t.end <= ls) continue
     if (t.start >= le) break
     const s = Math.max(ls, t.start)
     const e = Math.min(le, t.end)
-    if (s > cursor) {
-      out.push(esc(src.slice(cursor, s)))
-      cursor = s
-    }
     if (s < e) {
       const inner = src.slice(s, e)
       out.push(t.tag ? `<${t.tag}>${esc(inner)}</${t.tag}>` : esc(inner))
-      cursor = e
     }
   }
-  if (cursor < le) out.push(esc(src.slice(cursor, le)))
   return out.join('')
 }
 
