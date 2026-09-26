@@ -1,14 +1,8 @@
 /*
-  Cross-language keyword table for the universal (language-free) engine.
-
-  The engine never guesses the language, so it highlights any identifier that
-  is a reserved word in *any* common language. Matching is case-insensitive
-  (covers SQL / Pascal / VB-style keywords) and guarded so that an identifier
-  used as a property (`obj.type`) or as an HTML attribute is not mis-colored.
-
-  Recall is favoured over precision on purpose: a rare false positive is
-  preferable to a missing keyword. Property access is de-emphasized by the
-  dot-guard in classify.ts.
+  Cross-language keyword table. An identifier that is a reserved word in *any*
+  common language is highlighted; matching is case-insensitive. Recall is
+  favoured over precision on purpose, so a rare false positive beats a miss.
+  Property access and HTML attributes are excluded in classify.ts.
 */
 
 const RAW = `
@@ -120,7 +114,7 @@ const HTML_RAW = `
   section select slot small source span strong style sub summary sup table
   tbody td template textarea tfoot th thead time title tr track u ul var video
   wbr svg path circle rect g text tspan linearGradient stop defs use symbol
-  pattern filter mask title xml stylesheet
+  pattern filter mask xml stylesheet
 `
 
 export const HTML_TAGS: ReadonlySet<string> = new Set(HTML_RAW.split(/\s+/).filter(Boolean))

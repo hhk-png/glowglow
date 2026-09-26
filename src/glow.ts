@@ -1,27 +1,16 @@
 /*
   glowglow — universal, language-free syntax highlighting.
 
-  Usage:
-    glow(code)                          // a whole <code> element, as a string
-    glowInner(code)                     // just the inside, for your own <code>
-    glowSource(code)                    // the text that gets rendered + an offset mapper
-    glow(code, { numbered: true })
-    glow(['line 1', 'line 2'])
-    glow(code, { language: 'ts' })      // language only annotates <code>; never affects the engine
+  The engine never guesses the language and never needs one: comments, strings,
+  templates, numbers, keywords, identifiers, decorators and real HTML/JSX tags
+  are recognised structurally.
 
-  The engine is deliberately single-rule and language agnostic: it never guesses
-  the language and it never needs one. Comments, strings, templates, numbers,
-  keywords, identifiers, decorators and (real) HTML/JSX tags are all recognised
-  structurally.
+  Tags match the bundled css/ vocabulary: keywords <strong>, identifiers <b>,
+  strings/numbers <em>, comments <sup>, decorators <label>, ops <i>.
 
-  Colours reuse the existing tag vocabulary so the bundled css/ themes apply
-  unchanged: keywords <strong>, identifiers <b>, strings/numbers <em>, comments
-  <sup>, decorators <label>, operators/brackets <i>.
-
-  `glow()` normalises CRLF and drops blank leading/trailing lines before it
-  renders. Callers that need to relate positions in their own source to
-  positions in the output should ask `glowSource()` rather than re-deriving
-  that transformation, which is private and may change.
+  glow() normalises CRLF and drops blank leading/trailing lines. Callers that
+  need to map their own offsets into the output should use glowSource() rather
+  than re-deriving that.
 */
 
 import type { ClassifiedToken } from './classify'
@@ -39,11 +28,7 @@ export interface GlowOptions {
 export interface GlowSource {
   /** The exact text the rendered markup contains, in document order. */
   text: string
-  /**
-   * Map a character offset in the original input to the matching offset in
-   * `text`. Offsets landing in a trimmed blank line collapse to the nearest
-   * surviving position, so the result is always within `[0, text.length]`.
-   */
+  /** Map an offset in the original input to the matching offset in `text`, clamped to its length. */
   offset: (inputOffset: number) => number
 }
 
@@ -55,9 +40,8 @@ function esc(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
-// lex() emits contiguous tokens that fully cover the source, so every byte of a
-// line is claimed by exactly one token — no gaps to fill in and nothing left over
-// at the end of the line.
+// lex() emits contiguous tokens that cover the whole source, so every byte of a
+// line belongs to exactly one token — nothing to fill in, nothing left over.
 function renderLine(src: string, toks: ClassifiedToken[], ls: number, le: number): string {
   const out: string[] = []
   for (const t of toks) {
@@ -110,9 +94,8 @@ function render(text: string, opts: GlowOptions): string {
 }
 
 /**
- * Highlight `input` into the markup that belongs *inside* a `<code>` element.
- * Use this when you already own the element you are highlighting into and want
- * to keep its own attributes:
+ * The markup that belongs *inside* a `<code>` element — for when you already own
+ * the element and want to keep its attributes.
  *
  *     el.innerHTML = glowInner(code)
  */
@@ -121,13 +104,11 @@ export function glowInner(input: string | readonly string[], opts: GlowOptions =
 }
 
 /**
- * The text `glow()` will actually render for `input`, plus a mapper that turns
- * an offset in `input` into the matching offset in that text. Highlighting
- * replaces the source with tagged markup, so this is how a caller keeps its own
- * positions (elements carrying an `id`, search hits, …) aligned:
+ * The text `glow()` renders, plus a mapper from `input` offsets into it — for
+ * putting your own markers (elements carrying an `id`, search hits) back after
+ * highlighting replaces the source with tagged markup.
  *
  *     const { text, offset } = glowSource(code)
- *     const at = offset(markerOffset)
  */
 export function glowSource(input: string | readonly string[]): GlowSource {
   const raw = toRaw(input)

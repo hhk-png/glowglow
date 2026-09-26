@@ -2,7 +2,7 @@
 
 **CSS-first, language-agnostic syntax highlighting for the web.** You hand it code — *any* code — and it returns semantic HTML (`<b>`, `<em>`, `<strong>`, `<i>`, `<sup>`, `<label>`) that **your** CSS styles. No grammar files, no language packages, no 14 MB of language definitions. One minuscule highlighter for virtually every language.
 
-Built with [tsdown](https://tsdown.dev) and type-checked with [TypeScript 7.x](https://devblogs.microsoft.com/typescript/).
+Built with [tsdown](https://tsdown.dev) and type-checked with [TypeScript 6.x](https://devblogs.microsoft.com/typescript/).
 
 - 🔤 **No language required** — `glow(code)` works for TypeScript, JavaScript, Python, Go, Rust, C/C++, C#, Java, SQL, CSS, HTML, JSX and more, all with the *same* single rule set. The engine never guesses the language and never needs one.
 - 🧱 **Semantic HTML** — keywords `<strong>`, identifiers `<b>`, strings/numbers `<em>`, comments `<sup>`, decorators `<label>`, operators/brackets `<i>`. Style with plain CSS or a handful of CSS variables.
@@ -91,18 +91,22 @@ Markup is only recognised when the structure really is markup: an HTML/XML tag n
 
 ## Styling
 
-Glowglow ships the stylesheets from the original project. Import one or more of:
+Glowglow ships the stylesheets from the original nue-glow project. Import one or more of:
 
 ```css
 /* base token colors (syntax.css) */
 @import 'glowglow/css/syntax.css';
 
-/* +/- ins/del/dfn line markers (kept for backwards compatibility) */
+/* +/- ins/del/dfn line markers (see the note below) */
 @import 'glowglow/css/markers.css';
 
 /* example light-mode theme */
 @import 'glowglow/css/light.css';
 ```
+
+`glow()` escapes its input and only emits `<strong>`, `<b>`, `<em>`, `<i>`, `<sup>`
+and `<label>`, so the `ins`/`del`/`dfn`, `mark` and `u` rules only match markers
+**you** inject into the output.
 
 All colors are driven by CSS custom properties you can override on your own `<pre>`:
 

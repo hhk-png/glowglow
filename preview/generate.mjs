@@ -1,10 +1,6 @@
-// Regenerates preview/preview.html from preview/samples/*.
-//
-// Every sample is rendered by glow(code) with NO language argument — the page
-// proves the engine is language-free across TS/JS/Python/Go/Rust/SQL/CSS/HTML/
-// JSX/C/Java/C#/Kotlin/Swift/Ruby/PHP/Bash/Perl/Lua/Haskell/YAML/TOML/JSON.
-// A theme picker switches between ready-made palettes, all built from the same
-// CSS variables that css/*.css already expose.
+// Regenerates preview/preview.html from preview/samples/*. Every sample is
+// rendered with no language argument, so the page proves the engine is
+// language-free. The theme picker uses the same CSS variables as css/*.css.
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'

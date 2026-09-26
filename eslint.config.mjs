@@ -9,8 +9,7 @@ export default antfu(
   {
     files: ['test/**'],
     rules: {
-      // The suites assert on literal `${…}` text to prove that double-quoted
-      // strings are not interpolated, so this rule is a false positive here.
+      // the suites assert on literal `${…}` text, which is the point of the test
       'no-template-curly-in-string': 'off',
     },
   },

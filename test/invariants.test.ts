@@ -63,7 +63,7 @@ it('invariant: tokens are contiguous, in-bounds and cover the whole source', () 
       failures.push(`empty token list for non-empty source ${JSON.stringify(src)}`)
     }
 
-    // the property the deleted code used to backstop: no text may be dropped
+    // highlighting may only add tags: no character may be dropped or gained
     const expected = normalize(src)
     let got: string
     try {

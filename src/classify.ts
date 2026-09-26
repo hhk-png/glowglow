@@ -1,15 +1,12 @@
 /*
-  Semantic classification pass.
+  Turns the language-neutral tokens from lex() into colour tags.
 
-  Turns the language-neutral atomic tokens from lex() into colour tags using
-  context that is still language-free:
-    - cross-language keywords => <strong> (skipped after a `.` property access)
-    - any other identifier     => <b>
-    - HTML / XML tags          => only when the structure looks like markup
-      (a known element name, a self-closing tag, or a matched open/close pair)
-      so TS generics like Foo<T> and comparisons like a < b are never mis-coloured.
-    - plain prose between two recognised tags in a genuinely mark-up file
-      is left uncoloured; code around JSX braces stays code-coloured.
+    keywords  => <strong>   (except after a `.`)
+    other ids => <b>
+    markup    => only when the structure really is markup — a known element, a
+                 self-closing tag, or a matched pair — so Foo<T> and `a < b`
+                 are never mis-coloured
+    prose between two real tags is left uncoloured
 */
 
 import type { Kind, Token } from './lexer'
@@ -100,9 +97,8 @@ export function classify(src: string, toks: Token[]): ClassifiedToken[] {
           term = m
           break
         }
-        // a lone '/' (an unquoted url, say) is attribute noise — `/>` always
-        // arrives as one token — so it falls through to the check below.
-        // an attribute operator ( = : . ? - … ) is fine; anything structural is not
+        // a lone '/' is attribute noise (`/>` arrives as one token) and falls
+        // through; an attribute operator is fine, anything structural is not
         if (s.includes('<') || /[()[\]]/.test(s)) {
           invalid = true
           break
@@ -183,11 +179,9 @@ export function classify(src: string, toks: Token[]): ClassifiedToken[] {
   }
 
   // --- quoted object keys ------------------------------------------------
-  // In JSON (and quoted keys in JS/Python dicts etc.) a key is a quoted string
-  // whose following token is a single ':' and whose preceding token is '{' or
-  // ','. Give the key the identifier colour <b> so it reads apart from string
-  // *values* (which stay <em>). Ternary branches ("a" : … after '?') and other
-  // plain strings never match because they are not preceded by '{' or ','.
+  // A quoted string followed by ':' and preceded by '{' or ',' is a key, so it
+  // takes the identifier colour instead of the string colour. A ternary branch
+  // ("a" : …) has no '{' or ',' before it, so it stays a string.
   const keyIdx = new Set<number>()
   for (let i = 0; i < n; i++) {
     const t = toks[i]!

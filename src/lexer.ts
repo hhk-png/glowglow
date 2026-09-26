@@ -1,13 +1,9 @@
 /*
-  Universal (language-free) tokenizer.
+  Universal (language-free) tokenizer: one pass, emitting a flat, non-overlapping
+  list of atomic tokens that fully cover the input. A context stack lets strings,
+  block comments and templates span lines with quotes/braces balanced.
 
-  Scans the whole source in one pass and emits a flat, non-overlapping list of
-  atomic tokens that fully cover the input. A small context stack lets strings,
-  block comments, templates and their interpolations legitimately span lines
-  while nested quotes / braces stay balanced.
-
-  The tokenizer does NOT decide colours. classify.ts turns the atomic kinds into
-  semantic tags (keyword strong, identifiers b, markup pairing, etc.).
+  It does not decide colours — classify.ts does.
 */
 
 export type Kind = 'comment' | 'str' | 'word' | 'num' | 'op' | 'decor' | 'ws'

@@ -15,13 +15,8 @@ pre {
     text-decoration: inherit
   }
 
-  /* A universal selector adds no specificity, so `pre *` scores the same as
-     normalize.css's `b, strong { font-weight: bolder }` — which then wins or
-     loses purely on stylesheet order, turning every keyword bold in bundles
-     that emit normalize last. Restating it with an element in the selector
-     makes the reset win regardless of order. (The browser's own `em, i {
-     font-style: italic }` needs no such treatment: user-agent declarations lose
-     to any author declaration.) */
+  /* `pre *` ties with normalize.css's `b, strong { font-weight: bolder }`, so
+     the winner depends on stylesheet order. The element makes it win. */
   b, strong { font-weight: 400 }
 
   /* primary accent color */
@@ -37,7 +32,7 @@ pre {
   i { color: var(--glow-char-color, #64748b) }
 
 
-  /* vawy error message */
+  /* wavy error message */
   u {
     text-decoration: underline wavy var(--glow-error-color, red);
     text-decoration-thickness: .15em;
@@ -50,8 +45,7 @@ pre {
     font-size: inherit;
     vertical-align: inherit;
     font-style: italic;
-    /* Cancelling vertical-align alone leaves normalize.css's `sup { position:
-       relative; top: -.5em }` in place, which still lifts every comment. */
+    /* normalize.css's `sup { position: relative; top: -.5em }` still lifts it */
     position: static;
     top: 0;
   }
@@ -68,9 +62,8 @@ pre {
     margin: -.3em -.4em;
   }
 
-  /* Line numbers apply only to the spans emitted for `numbered: true`, so a
-     caller's own <span>s inside a pre (page-break anchors, search hits) are
-     never numbered, and a span nested inside a line never double-counts. */
+  /* Only the spans emitted for `numbered: true`, so a caller's own <span>s in a
+     pre are never numbered and a nested span never double-counts. */
   .glow-line {
     counter-increment: line-counter 1;
 
