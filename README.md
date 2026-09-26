@@ -138,6 +138,7 @@ pnpm typecheck   # tsc --noEmit
 pnpm test        # vitest
 pnpm coverage    # vitest + v8 coverage (100% on every metric)
 pnpm lint        # eslint (antfu config)
+pnpm bench       # build, then time glow() across sizes and adversarial inputs
 pnpm build       # tsdown → dist/ (ESM, CJS, .d.ts)
 
 node preview/generate.mjs  # regenerate preview/preview.html from preview/samples/

@@ -51,6 +51,7 @@
     "fix": "eslint . --fix",
     "test": "vitest run",
     "coverage": "vitest run --coverage",
+    "bench": "pnpm build && node bench/run.mjs",
     "release": "bumpp --push",
     "prepublishOnly": "pnpm build",
     "prepare": "simple-git-hooks"

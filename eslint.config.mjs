@@ -13,4 +13,11 @@ export default antfu(
       'no-template-curly-in-string': 'off',
     },
   },
+  {
+    files: ['bench/**'],
+    rules: {
+      // the bench measures the built bundle on purpose; `pnpm bench` builds first
+      'antfu/no-import-dist': 'off',
+    },
+  },
 )
