@@ -37,16 +37,22 @@ function toRaw(input: string | readonly string[]): string {
 }
 
 function esc(str: string): string {
+  // most tokens (identifiers, whitespace) hold nothing to escape, so pay for
+  // one scan rather than three replaces
+  if (!/[&<>]/.test(str)) {
+    return str
+  }
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
 // lex() emits contiguous tokens that cover the whole source, so every byte of a
 // line belongs to exactly one token — nothing to fill in, nothing left over.
-function renderLine(src: string, toks: ClassifiedToken[], ls: number, le: number): string {
+// `from` is the first token that can overlap the line; every token before it
+// ends at or before `ls`.
+function renderLine(src: string, toks: ClassifiedToken[], from: number, ls: number, le: number): string {
   const out: string[] = []
-  for (const t of toks) {
-    if (t.end <= ls)
-      continue
+  for (let i = from; i < toks.length; i++) {
+    const t = toks[i]!
     if (t.start >= le)
       break
     const s = Math.max(ls, t.start)
@@ -83,10 +89,15 @@ function render(text: string, opts: GlowOptions): string {
   const toks = classify(text, lex(text))
   const out: string[] = []
   let offset = 0
+  let from = 0
   for (const line of text.split('\n')) {
     const ls = offset
     const le = ls + line.length
-    const rendered = renderLine(text, toks, ls, le)
+    // lines and tokens both run in ascending order, so the window for a line
+    // starts where the previous one stopped — advancing it once keeps the whole
+    // pass linear instead of rescanning every token for every line
+    while (from < toks.length && toks[from]!.end <= ls) from++
+    const rendered = renderLine(text, toks, from, ls, le)
     out.push(opts.numbered ? `<span class="glow-line">${rendered}</span>` : rendered)
     offset = le + 1 // skip the '\n'
   }
