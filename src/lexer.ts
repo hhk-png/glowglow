@@ -379,7 +379,8 @@ function scanNumber(src: string, start: number): number {
   const c = src[i]!
 
   // radix prefixes
-  if (c === '0' && 'xXbBoO'.indexOf(src[i + 1] || '') !== -1) {
+  const nx = src[i + 1]
+  if (c === '0' && nx !== undefined && 'xXbBoO'.includes(nx)) {
     i += 2
     while (i < len && /[0-9a-zA-Z_]/.test(src[i]!)) i++
     return i
