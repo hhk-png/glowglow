@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>glowglow — minimap</title>
+<!--
+  A minimap drawn from the engine's own data, not from the rendered HTML.
+
+  Open it directly — the bundle is a classic script (see editor.html for why).
+
+  Nothing here reaches into glowglow's internals: `lineTokens(i)` and
+  `lineTags(i)` on the public document are all it takes to draw per-line colour,
+  and `lineCount` sizes the strip. That is the point of the incremental entry:
+  a plain string API can only give you markup, and markup is exactly what you
+  cannot draw a minimap from.
+-->
+<link rel="stylesheet" href="../css/syntax.css">
+<link rel="stylesheet" href="../css/light.css">
+<link rel="stylesheet" href="../css/editor.css">
+<style>
+  body { margin: 0; font: 14px system-ui, sans-serif; background: #f9f9f9; color: #333; }
+  header { padding: 12px 20px; border-bottom: 1px solid #e2e2e2; display: flex; gap: 16px; align-items: baseline; }
+  header h1 { font-size: 14px; margin: 0; font-weight: 600; }
+  header span { color: #888; font-size: 12px; }
+  main { display: flex; gap: 16px; margin: 20px; align-items: stretch; }
+  pre { flex: 1; border: 1px solid #e2e2e2; border-radius: 8px; height: 60vh; margin: 0; }
+  #map { width: 96px; border: 1px solid #e2e2e2; border-radius: 8px; cursor: pointer; }
+  #viewport { fill: rgba(0, 0, 0, .07); }
+</style>
+</head>
+<body>
+<header>
+  <h1>glowglow minimap</h1>
+  <span id="status">—</span>
+</header>
+<main>
+  <pre id="editor"></pre>
+  <canvas id="map" width="96"></canvas>
+</main>
+
+<script src="./glowglow.preview.js"></script>
+<script>
+  var statusEl = document.getElementById('status')
+  var map = document.getElementById('map')
+  var ctx = map.getContext('2d')
+
+  if (!window.glowglow) {
+    statusEl.textContent = 'Bundle missing — run `pnpm build` first (it writes preview/glowglow.preview.js).'
+  }
+  else {
+    var sample = []
+    for (var i = 0; i < 60; i++) {
+      sample.push(
+        '// section ' + i,
+        'export function step' + i + '(input) {',
+        '  const scale = ' + i + ' * 2',
+        '  return input.map(x => x * scale)',
+        '}',
+        ''
+      )
+    }
+
+    var editor = window.glowglow.mountGlowEditor(document.getElementById('editor'), {
+      value: sample.join('\n'),
+      numbered: true,
+      onChange: function () { draw() },
+    })
+    editor.element.addEventListener('scroll', drawViewport)
+
+    var theme = getComputedStyle(editor.element)
+
+    /** The CSS variables the stylesheets already drive, so the map matches the theme. */
+    function ink(tag) {
+      var name = {
+        strong: '--glow-accent-color',
+        b: '--glow-primary-color',
+        em: '--glow-secondary-color',
+        sup: '--glow-comment-color',
+        label: '--glow-special-color',
+        i: '--glow-char-color',
+      }[tag]
+      return (name && theme.getPropertyValue(name).trim()) || theme.getPropertyValue('--glow-base-color').trim() || '#999'
+    }
+
+    var ROW_H = 3
+    var CH = 0.9 // pixels per character, sideways
+
+    function draw() {
+      var doc = editor.document
+      var height = Math.max(1, doc.lineCount) * ROW_H
+      map.height = height
+      map.style.height = height + 'px'
+
+      ctx.clearRect(0, 0, map.width, height)
+
+      for (var row = 0; row < doc.lineCount; row++) {
+        var toks = doc.lineTokens(row)
+        var tags = doc.lineTags(row)
+        var y = row * ROW_H
+        var x = 0
+        for (var t = 0; t < toks.length; t++) {
+          var w = (toks[t].end - toks[t].start) * CH
+          if (!tags[t]) { x += w; continue } // whitespace and plain text stay empty
+          ctx.fillStyle = ink(tags[t])
+          ctx.fillRect(x, y, Math.max(0.5, w), ROW_H - 1)
+          x += w
+        }
+      }
+    }
+
+    function drawViewport() {
+      draw()
+      var el = editor.element
+      var total = el.scrollHeight || 1
+      var scale = map.height / total
+      ctx.fillStyle = 'rgba(0,0,0,.07)'
+      ctx.fillRect(0, el.scrollTop * scale, map.width, el.clientHeight * scale)
+      statusEl.textContent = editor.document.lineCount + ' lines · scrolled ' + Math.round(el.scrollTop)
+    }
+
+    map.addEventListener('click', function (e) {
+      var el = editor.element
+      var ratio = e.offsetY / map.height
+      el.scrollTop = ratio * (el.scrollHeight - el.clientHeight)
+      drawViewport()
+    })
+
+    draw()
+    statusEl.textContent = editor.document.lineCount + ' lines'
+    editor.element.focus()
+  }
+</script>
+</body>
+</html>

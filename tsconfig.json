@@ -14,5 +14,7 @@
     "erasableSyntaxOnly": true,
     "skipLibCheck": true
   },
-  "include": ["src", "test", "tsdown.config.ts"]
+  "include": ["src", "test", "tsdown.config.ts"],
+  // the DOM adapter is checked separately, with the DOM lib (see tsconfig.dom.json)
+  "exclude": ["src/dom.ts", "test/dom.test.ts"]
 }

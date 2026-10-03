@@ -3,6 +3,21 @@
   list of atomic tokens that fully cover the input. A context stack lets strings,
   block comments and templates span lines with quotes/braces balanced.
 
+  Two entry points share one loop:
+
+    lex(src)                          — the whole input, as before
+    lexSegment(src, from, to, state)  — the half-open range [from, to), resumed
+                                        from the state an earlier segment
+                                        returned. The incremental editor lexes
+                                        one line at a time and keeps the state
+                                        at every line boundary.
+
+  Every line boundary is a safe resume point: the stack carries each construct
+  that spans lines (strings, templates, interpolations and block comments), and
+  a segment clips its tokens at `to`, so a construct crossing the boundary comes
+  out as two contiguous pieces. Splitting this way is equivalent to splitting a
+  whole-input lex at every newline — see the seam-equivalence test.
+
   It does not decide colours — classify.ts does.
 */
 
@@ -50,7 +65,26 @@ interface InterpFrame {
   depth: number // 1 == the interpolation's own opener has been consumed
 }
 
-type Frame = StrFrame | InterpFrame
+// A block comment (`/* */`, `<!-- -->`, Lua `--[[ ]]`) whose close has not been
+// seen yet. Unlike strings these have no interior syntax, so a segment that ends
+// mid-comment just clips: the frame carries the way out (`close`) and where the
+// run began, so the piece emitted in the segment that *does* find the close
+// still covers everything from the opener to the closer.
+interface BlockFrame {
+  kind: 'block'
+  close: string
+  start: number
+}
+
+export type Frame = StrFrame | InterpFrame | BlockFrame
+
+/** Opaque lexer state at a segment boundary. Pass it back to lexSegment verbatim. */
+export type LexState = readonly Frame[]
+
+export interface LexRun {
+  tokens: Token[]
+  state: Frame[]
+}
 
 // Is the identifier starting at i actually a string prefix (f"…", rf'…', $"…")?
 // The quote must directly follow a 1-2 char run of r/f/b/u letters (or $) at a
@@ -101,23 +135,63 @@ function isBraceInterp(src: string, start: number, q: string): boolean {
   return false
 }
 
-export function lex(src: string): Token[] {
+/**
+ * Lex the half-open range [from, to) of `src`, resumed from `state`. A segment
+ * boundary must be where an earlier segment stopped; every line boundary is one.
+ * `lex` is the whole-input case, `lexSegment(src, 0, src.length, [])`.
+ */
+export function lexSegment(
+  src: string,
+  from: number,
+  to: number,
+  state: readonly Frame[],
+  /** Whether this segment reaches the end of the input (so an open literal ends here). */
+  eof: boolean = to >= src.length,
+): LexRun {
   const tokens: Token[] = []
   const len = src.length
+  // how far the emitted tokens reach, so a construct opened on the last byte
+  // (whose handling only runs at the top of the next iteration) can be closed
+  let covered = from
   const emit = (kind: Kind, start: number, end: number) => {
-    if (end > start)
+    if (end > start) {
       tokens.push({ kind, start, end })
+      covered = end
+    }
   }
-  const stack: Frame[] = []
+  // Copy so the caller's checkpoint is never mutated by this segment. A carried
+  // block frame's opener lies behind us and its piece was emitted by an earlier
+  // segment, so the run this segment emits starts here — re-pointing it also
+  // discards the stale absolute offset a reused line may have carried.
+  const stack: Frame[] = state.map(f =>
+    f.kind === 'block' ? { kind: 'block', close: f.close, start: from } : { ...f },
+  )
   const top = (): Frame | undefined => stack[stack.length - 1]
 
   function pushString(delim: string, mark: Mark, multi: boolean): void {
     stack.push({ kind: 'str', delim, mark, multi })
   }
 
-  let i = 0
-  while (i < len) {
+  let i = from
+  while (i < to) {
     const f = top()
+
+    // ---------------- resuming inside a block comment ----------------
+    if (f && f.kind === 'block') {
+      const idx = src.indexOf(f.close, i)
+      if (idx !== -1 && idx + f.close.length <= to) {
+        // the close is in this segment: one token from the opener to the closer
+        emit('comment', Math.max(f.start, from), idx + f.close.length)
+        i = idx + f.close.length
+        stack.pop()
+      }
+      else {
+        // still open at the segment end: clip here, the frame carries on
+        emit('comment', Math.max(f.start, from), to)
+        i = to
+      }
+      continue
+    }
 
     // ---------------- text scanning: inside a string/template ----------------
     if (f && f.kind === 'str') {
@@ -125,12 +199,12 @@ export function lex(src: string): Token[] {
       const chunkStart = i
       let done = false
 
-      while (i < len) {
+      while (i < to) {
         const c = src[i]!
 
         // backslash escape (also swallows an escaped newline / escaped quote)
         if (c === '\\') {
-          i = Math.min(len, i + 2)
+          i = Math.min(to, i + 2)
           continue
         }
 
@@ -185,10 +259,12 @@ export function lex(src: string): Token[] {
         i++
       }
 
-      // unterminated literal reaching end of input
-      if (!done && i >= len && top() && top()!.kind === 'str') {
-        emit('str', chunkStart, len)
-        stack.pop()
+      if (!done) {
+        // the literal is still open at `to`: emit this segment's piece and keep
+        // the frame for the next one. Only the end of the input pops it.
+        emit('str', chunkStart, to)
+        if (eof && top() && top()!.kind === 'str')
+          stack.pop()
       }
       continue
     }
@@ -199,7 +275,7 @@ export function lex(src: string): Token[] {
     // whitespace
     if (isWs(c)) {
       let j = i
-      while (j < len && isWs(src[j]!)) j++
+      while (j < to && isWs(src[j]!)) j++
       emit('ws', i, j)
       i = j
       continue
@@ -208,46 +284,43 @@ export function lex(src: string): Token[] {
     // line comment // …
     if (c === '/' && src[i + 1] === '/') {
       let j = i + 2
-      while (j < len && src[j] !== '\n') j++
+      while (j < to && src[j] !== '\n') j++
       emit('comment', i, j)
       i = j
       continue
     }
 
-    // block comment /* … */
+    // block comment /* … */  — only the opener here; the block frame emits the
+    // whole run once it finds the close (or clips at the segment end otherwise)
     if (c === '/' && src[i + 1] === '*') {
-      const end = src.indexOf('*/', i + 2)
-      const j = end === -1 ? len : end + 2
-      emit('comment', i, j)
-      i = j
+      stack.push({ kind: 'block', close: '*/', start: i })
+      i += 2
       continue
     }
 
     // html block comment <!-- … -->
     if (c === '<' && src.startsWith('<!--', i)) {
-      const end = src.indexOf('-->', i + 4)
-      const j = end === -1 ? len : end + 3
-      emit('comment', i, j)
-      i = j
+      stack.push({ kind: 'block', close: '-->', start: i })
+      i += 4
       continue
     }
 
     // hash comment (# comment, #! shebang). Not #fff / #include / #id.
     if (c === '#' && (i + 1 >= len || isWs(src[i + 1]!) || src[i + 1] === '!')) {
       let j = i + 1
-      while (j < len && src[j] !== '\n') j++
+      while (j < to && src[j] !== '\n') j++
       emit('comment', i, j)
       i = j
       continue
     }
 
     // Lua long block comment  --[[ … ]] / --[==[ … ]==]  (multiline, unambiguous
-    // because it starts with '--')
+    // because it starts with '--'). Only the opener is pushed here.
     if (c === '-' && src[i + 1] === '-') {
-      const end = luaBlockEnd(src, i + 2)
-      if (end !== -1) {
-        emit('comment', i, end)
-        i = end
+      const open = luaOpen(src, i + 2)
+      if (open) {
+        stack.push({ kind: 'block', close: open.close, start: i })
+        i = open.end
         continue
       }
     }
@@ -260,10 +333,10 @@ export function lex(src: string): Token[] {
       c === '-'
       && src[i + 1] === '-'
       && (prevC === '' || isWs(prevC))
-      && (i + 2 >= len || isWs(src[i + 2]!))
+      && (i + 2 >= to || isWs(src[i + 2]!))
     ) {
       let j = i + 2
-      while (j < len && src[j] !== '\n') j++
+      while (j < to && src[j] !== '\n') j++
       emit('comment', i, j)
       i = j
       continue
@@ -355,7 +428,7 @@ export function lex(src: string): Token[] {
     // run of operator characters (===, =>, ++, ?., ::, …)
     if (OP_RUN.has(c)) {
       let j = i
-      while (j < len && OP_RUN.has(src[j]!)) {
+      while (j < to && OP_RUN.has(src[j]!)) {
         const ch = src[j]!
         if (ch === '/' && (src[j + 1] === '/' || src[j + 1] === '*'))
           break
@@ -378,7 +451,22 @@ export function lex(src: string): Token[] {
     i++
   }
 
-  return tokens
+  // A block comment opened on the last byte never reached the top of an
+  // iteration, so its frame is still open with nothing emitted for it. (Every
+  // other opener — quote, backtick, prefix, ${ — emits its delimiter on push,
+  // so `covered` is already at `to`.)
+  if (covered < to) {
+    const t = top()
+    if (t && t.kind === 'block')
+      emit('comment', Math.max(t.start, from), to)
+  }
+
+  return { tokens, state: stack }
+}
+
+/** Lex the whole input. */
+export function lex(src: string): Token[] {
+  return lexSegment(src, 0, src.length, []).tokens
 }
 
 function isIdStartAt(src: string, i: number): boolean {
@@ -431,19 +519,19 @@ function scanNumber(src: string, start: number): number {
   return i
 }
 
-// Lua long-bracket opener "[[", "[=[", "[==[" … starting at `from`? Returns the
-// byte offset just past the matching "]]"/"]=]"/…, or -1 when it is not a long
-// bracket. Used only after "--" so it can never collide with code.
-function luaBlockEnd(src: string, from: number): number {
+// Lua long-bracket opener "[[" / "[=[" / "[==[" … starting at `from`? Returns
+// the matching close (`]]` / `]=]` / …) and the offset just past the opener, or
+// null when it is not a long bracket. Used only after "--" so it can never
+// collide with code.
+function luaOpen(src: string, from: number): { close: string, end: number } | null {
   if (src[from] !== '[')
-    return -1
+    return null
   let k = from + 1
   while (src[k] === '=') k++
   if (src[k] !== '[')
-    return -1
-  const close = `]${src.slice(from + 1, k)}]`
-  const hit = src.indexOf(close, k + 1)
-  return hit === -1 ? src.length : hit + close.length
+    return null
+  const eq = src.slice(from + 1, k)
+  return { close: `]${eq}]`, end: k + 1 }
 }
 
 export function tokenText(src: string, tok: Token): string {

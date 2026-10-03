@@ -1,0 +1,10 @@
+{
+  // The core never touches the DOM (see the `lib` in tsconfig.json); only this
+  // entry point does, so it gets the DOM types on its own.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM"]
+  },
+  "include": ["src/dom.ts", "test/dom.test.ts"],
+  "exclude": []
+}

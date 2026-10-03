@@ -31,6 +31,16 @@
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     },
+    "./incremental": {
+      "types": "./dist/incremental.d.ts",
+      "import": "./dist/incremental.js",
+      "require": "./dist/incremental.cjs"
+    },
+    "./dom": {
+      "types": "./dist/dom.d.ts",
+      "import": "./dist/dom.js",
+      "require": "./dist/dom.cjs"
+    },
     "./css/*": "./css/*",
     "./package.json": "./package.json"
   },
@@ -46,10 +56,11 @@
   },
   "scripts": {
     "build": "tsdown",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.dom.json",
     "lint": "eslint . --cache",
     "fix": "eslint . --fix",
     "test": "vitest run",
+    "test:browser": "pnpm build && node test/browser-check.mjs",
     "coverage": "vitest run --coverage",
     "bench": "pnpm build && node bench/run.mjs",
     "release": "bumpp --push",
@@ -62,6 +73,7 @@
     "@vitest/coverage-v8": "5.0.0",
     "bumpp": "^12.3.0",
     "eslint": "^10.11.0",
+    "happy-dom": "^20.14.5",
     "lint-staged": "^17.5.1",
     "simple-git-hooks": "^2.14.0",
     "tsdown": "^0.23.0",

@@ -6,3 +6,4 @@ coverage/
 .eslintcache
 .claude/
 preview/preview.html
+preview/glowglow.preview.js

@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>glowglow — folding a huge file</title>
+<!--
+  A 100,000-line file: only the visible rows exist in the DOM, and whole blocks
+  collapse away.
+
+  Note what decides *what* folds: the page, by matching braces. The engine only
+  supplies `foldMap()` — a projection from document lines to visible rows — so a
+  brace matcher, an outline or a language server all plug into the same renderer.
+  Folding never touches the document.
+
+  Open it directly; the bundle is a classic script (see editor.html for why).
+-->
+<link rel="stylesheet" href="../css/syntax.css">
+<link rel="stylesheet" href="../css/light.css">
+<link rel="stylesheet" href="../css/editor.css">
+<style>
+  body { margin: 0; font: 14px system-ui, sans-serif; background: #f9f9f9; color: #333; }
+  header { padding: 12px 20px; border-bottom: 1px solid #e2e2e2; display: flex; gap: 16px; align-items: baseline; flex-wrap: wrap; }
+  header h1 { font-size: 14px; margin: 0; font-weight: 600; }
+  header span { color: #888; font-size: 12px; }
+  header button { font: inherit; font-size: 12px; padding: 3px 10px; border: 1px solid #ddd; border-radius: 6px; background: #fff; cursor: pointer; }
+  #view { position: relative; height: calc(100vh - 90px); margin: 20px; overflow: auto; border: 1px solid #e2e2e2; border-radius: 8px; background: #fff; }
+  #spacer { width: 1px; }
+  #layer { position: absolute; top: 0; left: 0; right: 0; will-change: transform; }
+  .row { display: flex; height: 21px; font: 0.875rem/21px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+  .gutter { flex: none; width: 6.5em; padding-right: .6em; text-align: right; color: var(--glow-counter-color, #bbb); user-select: none; }
+  .fold { display: inline-block; width: 1.2em; cursor: pointer; color: #bbb; }
+  .fold:hover { color: var(--glow-accent-color, #456aff); }
+  .line { flex: 1; white-space: pre; }
+  .marker { color: var(--glow-comment-color, #9aa1a3); background: #f2f4f7; border-radius: 4px; padding: 0 .4em; }
+</style>
+</head>
+<body>
+<header>
+  <h1>glowglow folding</h1>
+  <span id="status">—</span>
+  <button id="collapse">collapse all</button>
+  <button id="expand">expand all</button>
+</header>
+<div id="view">
+  <div id="spacer"></div>
+  <div id="layer"></div>
+</div>
+
+<script src="./glowglow.preview.js"></script>
+<script>
+  var statusEl = document.getElementById('status')
+
+  if (!window.glowglow) {
+    statusEl.textContent = 'Bundle missing — run `pnpm build` first (it writes preview/glowglow.preview.js).'
+  }
+  else {
+    var RECORDS = 16000
+    var source = []
+    for (var i = 0; i < RECORDS; i++) {
+      source.push(
+        '// record ' + i,
+        'export function rec' + i + '(i) {',
+        '  const a = i * 2',
+        '  const b = a + ' + i,
+        '  return { id: ' + i + ', value: b }',
+        '}'
+      )
+    }
+
+    var t0 = performance.now()
+    var doc = window.glowglow.glowDocument(source.join('\n'))
+    var buildMs = performance.now() - t0
+
+    var view = document.getElementById('view')
+    var spacer = document.getElementById('spacer')
+    var layer = document.getElementById('layer')
+    var ROW_H = 21
+    var OVERSCAN = 6
+
+    // --- what folds: the page's own brace matcher, not the engine -------------
+    var foldable = {} // line -> last line of its block
+    var stack = []
+    for (var line = 0; line < doc.lineCount; line++) {
+      var text = doc.lineText(line)
+      if (/\{\s*$/.test(text)) stack.push(line)
+      if (/^\s*\}/.test(text) && stack.length)
+        foldable[stack.pop()] = line
+    }
+
+    var collapsed = {} // the folds the user has closed
+    var map = window.glowglow.foldMap([], doc.lineCount)
+
+    function rebuild(collapseAll) {
+      var folds = []
+      for (var l in foldable) {
+        if (collapseAll || collapsed[l])
+          folds.push({ from: +l, to: foldable[l] })
+      }
+      if (collapseAll) {
+        collapsed = {}
+        for (var k in foldable) collapsed[k] = true
+      }
+      map = window.glowglow.foldMap(folds, doc.lineCount)
+      spacer.style.height = map.visibleCount * ROW_H + 'px'
+      view.scrollTop = Math.min(view.scrollTop, Math.max(0, spacer.offsetHeight - view.clientHeight))
+      render()
+    }
+
+    function render() {
+      var first = Math.max(0, Math.floor(view.scrollTop / ROW_H) - OVERSCAN)
+      var visible = Math.ceil(view.clientHeight / ROW_H) + OVERSCAN * 2
+      var last = Math.min(map.visibleCount, first + visible)
+
+      var t = performance.now()
+      var html = ''
+      for (var row = first; row < last; row++) {
+        var line = map.lineAt(row)
+        var hidden = map.hiddenAt(row)
+        html += '<div class="row" data-row="' + row + '">'
+          + '<span class="gutter">'
+          + (foldable[line] !== undefined
+            ? '<span class="fold" data-line="' + line + '">' + (collapsed[line] ? '▸' : '▾') + '</span>'
+            : '<span class="fold"></span>')
+          + (line + 1) + '</span>'
+          + '<span class="line">' + (doc.line(line) || '<br>')
+          + (hidden ? ' <span class="marker">⋯ ' + hidden + ' lines</span>' : '')
+          + '</span></div>'
+      }
+      layer.innerHTML = html
+      layer.style.transform = 'translateY(' + (first * ROW_H) + 'px)'
+      return performance.now() - t
+    }
+
+    function status(extra) {
+      statusEl.textContent = doc.lineCount.toLocaleString() + ' lines'
+        + ' · ' + map.visibleCount.toLocaleString() + ' rows'
+        + (map.hiddenCount ? ' (' + map.hiddenCount.toLocaleString() + ' folded away)' : '')
+        + ' · ' + layer.children.length + ' in the DOM'
+        + ' · built in ' + buildMs.toFixed(0) + 'ms'
+        + (extra ? ' · ' + extra : '')
+    }
+
+    var ticking = false
+    view.addEventListener('scroll', function () {
+      if (ticking) return
+      ticking = true
+      requestAnimationFrame(function () {
+        ticking = false
+        status('last frame ' + render().toFixed(2) + 'ms')
+      })
+    })
+
+    layer.addEventListener('click', function (e) {
+      var target = e.target
+      if (!target.classList || !target.classList.contains('fold') || target.dataset.line === undefined) return
+      var l = +target.dataset.line
+      collapsed[l] = !collapsed[l]
+      rebuild(false)
+      status()
+    })
+
+    document.getElementById('collapse').addEventListener('click', function () { rebuild(true); status() })
+    document.getElementById('expand').addEventListener('click', function () {
+      collapsed = {}
+      rebuild(false)
+      status()
+    })
+
+    rebuild(false)
+    status()
+  }
+</script>
+</body>
+</html>

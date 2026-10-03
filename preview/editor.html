@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>glowglow — live editor</title>
+<!--
+  Just open this file — no server needed.
+
+  It loads preview/glowglow.preview.js, a self-contained classic script produced
+  by `pnpm build`. (Browsers refuse to load ES modules over file://, which is why
+  the preview does not import dist/dom.js directly.)
+-->
+<link rel="stylesheet" href="../css/syntax.css">
+<link rel="stylesheet" href="../css/light.css">
+<link rel="stylesheet" href="../css/editor.css">
+<style>
+  body { margin: 0; font: 14px system-ui, sans-serif; background: #f9f9f9; color: #333; }
+  header { padding: 12px 20px; border-bottom: 1px solid #e2e2e2; display: flex; gap: 16px; align-items: baseline; }
+  header h1 { font-size: 14px; margin: 0; font-weight: 600; }
+  header span { color: #888; font-size: 12px; }
+  header input { font: inherit; font-size: 12px; padding: 3px 8px; border: 1px solid #ddd; border-radius: 6px; }
+  header button { font: inherit; font-size: 12px; padding: 3px 10px; border: 1px solid #ddd; border-radius: 6px; background: #fff; cursor: pointer; }
+  pre { border: 1px solid #e2e2e2; border-radius: 8px; margin: 20px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>glowglow live editor</h1>
+  <span id="status">—</span>
+  <input id="find" type="search" placeholder="find…" aria-label="find">
+  <button id="fold">fold blocks</button>
+  <button id="unfold">unfold</button>
+</header>
+<pre id="editor"></pre>
+
+<script src="./glowglow.preview.js"></script>
+<script>
+  // NB: `status` is a string property on window, so a bare `var status` here would break
+  var statusEl = document.getElementById('status')
+
+  if (!window.glowglow) {
+    statusEl.textContent = 'Bundle missing — run `pnpm build` first (it writes preview/glowglow.preview.js).'
+  }
+  else {
+    var sample = [
+      '// type here — only the lines you touch are re-coloured',
+      'export function fib(n) {',
+      '  const memo = new Map()',
+      '  const go = k => {',
+      '    if (k < 2) return k',
+      '    if (!memo.has(k)) memo.set(k, go(k - 1) + go(k - 2))',
+      '    return memo.get(k)',
+      '  }',
+      '  return go(n)',
+      '}',
+      '',
+      '/* a block comment',
+      '   spanning lines */',
+      'const s = `template ${fib(10)} literal`',
+      '',
+    ].join('\n')
+
+    var started = performance.now()
+    var editor = window.glowglow.mountGlowEditor(document.getElementById('editor'), {
+      value: sample,
+      numbered: true,
+      onFoldToggle: function (line) { toggle(line) },
+      onChange: function (text) {
+        statusEl.textContent = text.split('\n').length + ' lines · ' + text.length + ' chars'
+        find(findEl.value) // an edit moves the text, so the hits are recomputed
+      },
+    })
+    statusEl.textContent = 'mounted in ' + (performance.now() - started).toFixed(1) + 'ms — start typing'
+
+    // Search hits are the caller's ranges: find the offsets and hand them to
+    // setMarks — the engine splits its own tokens around them.
+    var findEl = document.getElementById('find')
+
+    function find(query) {
+      var hits = []
+      if (query.length >= 2) {
+        var escaped = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        var re = new RegExp(escaped, 'gi')
+        var m
+        while ((m = re.exec(editor.value)) && hits.length < 500)
+          hits.push({ from: m.index, to: m.index + m[0].length, cls: 'hit' })
+      }
+      editor.setMarks(hits)
+      statusEl.textContent = hits.length + (hits.length === 1 ? ' match' : ' matches')
+    }
+
+    findEl.addEventListener('input', function () { find(findEl.value) })
+
+    // Folding again shows the split: *this page* decides what folds (a brace
+    // matcher), the engine only supplies foldMap, and the editor never touches
+    // the text when a block collapses.
+    var collapsed = false
+
+    function blockFolds() {
+      var doc = editor.document
+      var stack = []
+      var folds = []
+      for (var i = 0; i < doc.lineCount; i++) {
+        var t = doc.lineText(i)
+        if (/\{\s*$/.test(t)) stack.push(i)
+        if (/^\s*\}/.test(t) && stack.length)
+          folds.push({ from: stack.pop(), to: i })
+      }
+      // nested blocks overlap, and foldMap keeps the outer one — so do the same
+      // here, or the page's idea of what is folded stops matching the engine's
+      folds.sort(function (a, b) { return a.from - b.from })
+      var out = []
+      for (var k = 0; k < folds.length; k++) {
+        var prev = out[out.length - 1]
+        if (prev && folds[k].from <= prev.to) continue
+        out.push(folds[k])
+      }
+      return out
+    }
+
+    function toggle(line) {
+      var open = blockFolds().filter(function (f) { return f.from === line })[0]
+      if (!open) return
+      var already = current.filter(function (f) { return f.from === open.from })
+      current = already.length
+        ? current.filter(function (f) { return f.from !== open.from })
+        : current.concat([open])
+      editor.setFolds(current)
+      statusEl.textContent = (already.length ? 'unfolded' : 'folded') + ' line ' + (line + 1)
+    }
+
+    var current = []
+
+    document.getElementById('fold').addEventListener('click', function () {
+      current = blockFolds()
+      editor.setFolds(current)
+      statusEl.textContent = current.length + ' blocks folded'
+    })
+    document.getElementById('unfold').addEventListener('click', function () {
+      current = []
+      editor.setFolds([])
+      statusEl.textContent = 'unfolded'
+    })
+
+    editor.element.focus()
+  }
+</script>
+</body>
+</html>

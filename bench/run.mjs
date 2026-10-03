@@ -11,7 +11,7 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import process from 'node:process'
 import { fileURLToPath } from 'node:url'
-import { glow } from '../dist/index.js'
+import { glow, glowDocument } from '../dist/index.js'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -47,7 +47,7 @@ function table(title, columns, rows) {
     process.stdout.write(`${line(r)}\n`)
 }
 
-const SIZES = [100, 1000, 5000, 10000]
+const SIZES = [100, 1000, 5000, 10000, 20000]
 
 table(
   'glow() — real code (preview/samples/typescript.ts)',
@@ -76,6 +76,43 @@ table(
   ADVERSARIAL.map(([name, src]) => {
     const ms = median(() => glow(src))
     return [name, src.length, `${ms.toFixed(2)}ms`, (ms / src.length * 1000).toFixed(3)]
+  }),
+)
+
+// The point of the incremental engine: editing one line must not cost O(file).
+// A keystroke is one insert + one delete at the same offset. Watch the us/edit
+// column — it should stay far below the `glow()` column above for the same size,
+// and the patch should stay a line or two regardless of the ladder.
+const EDITS = 2000
+
+table(
+  'glowDocument() — one keystroke (insert then delete)',
+  ['lines', 'chars', 'median edit', 'avg patch', 'vs glow()'],
+  SIZES.map((n) => {
+    const src = code(n)
+    const fullMs = median(() => glow(src))
+    const doc = glowDocument(src)
+    const at = Math.floor(src.length / 2)
+    for (let i = 0; i < 100; i++) {
+      doc.update(at, at, 'x')
+      doc.update(at, at + 1, '')
+    }
+    let patch = 0
+    const ms = median(() => {
+      patch = 0
+      for (let i = 0; i < EDITS; i++) {
+        patch += doc.update(at, at, 'x').lines.length
+        doc.update(at, at + 1, '')
+      }
+    }, 5)
+    const perEdit = ms / (EDITS * 2)
+    return [
+      n,
+      src.length,
+      `${(perEdit * 1000).toFixed(1)}us`,
+      (patch / EDITS).toFixed(1),
+      `${(perEdit / fullMs * 100).toFixed(1)}%`,
+    ]
   }),
 )
 

@@ -13,9 +13,9 @@
   than re-deriving that.
 */
 
-import type { ClassifiedToken } from './classify'
 import { classify } from './classify'
 import { lex } from './lexer'
+import { renderLine } from './render'
 
 export interface GlowOptions {
   /** Metadata only — written to the output <code language="…">, never read by the engine. */
@@ -34,35 +34,6 @@ export interface GlowSource {
 
 function toRaw(input: string | readonly string[]): string {
   return Array.isArray(input) ? input.join('\n') : String(input)
-}
-
-function esc(str: string): string {
-  // most tokens (identifiers, whitespace) hold nothing to escape, so pay for
-  // one scan rather than three replaces
-  if (!/[&<>]/.test(str)) {
-    return str
-  }
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-}
-
-// lex() emits contiguous tokens that cover the whole source, so every byte of a
-// line belongs to exactly one token — nothing to fill in, nothing left over.
-// `from` is the first token that can overlap the line; every token before it
-// ends at or before `ls`.
-function renderLine(src: string, toks: ClassifiedToken[], from: number, ls: number, le: number): string {
-  const out: string[] = []
-  for (let i = from; i < toks.length; i++) {
-    const t = toks[i]!
-    if (t.start >= le)
-      break
-    const s = Math.max(ls, t.start)
-    const e = Math.min(le, t.end)
-    if (s < e) {
-      const inner = src.slice(s, e)
-      out.push(t.tag ? `<${t.tag}>${esc(inner)}</${t.tag}>` : esc(inner))
-    }
-  }
-  return out.join('')
 }
 
 /** Normalise CRLF and drop blank leading/trailing lines. */

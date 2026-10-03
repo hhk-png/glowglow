@@ -1,0 +1,42 @@
+/*
+  Minimal chrome for what mountGlowLines() and mountGlowEditor() render. Load it
+  alongside css/syntax.css; all colours still come from the --glow-* variables.
+
+  Both mount the same line elements, so both get the same look — the editor adds
+  contenteditable and a focus ring on top.
+*/
+
+.glow-editor,
+.glow-lines {
+  position: relative;
+  margin: 0;
+  padding: 1em 1.25em;
+  overflow: auto;
+  font: 0.875rem/1.5 ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  tab-size: 2;
+  white-space: pre;
+  outline: none;
+  caret-color: var(--glow-base-color, currentColor);
+}
+
+.glow-editor > .glow-row,
+.glow-lines > .glow-row {
+  min-height: 1.5em;
+}
+
+.glow-fold {
+  display: inline-block;
+  width: 1.1em;
+  color: var(--glow-counter-color, #bbb);
+  cursor: pointer;
+  user-select: none;
+}
+
+.glow-fold:hover {
+  color: var(--glow-accent-color, #456aff);
+}
+
+.glow-editor:focus-visible {
+  outline: 1px solid var(--glow-accent-color, #456aff);
+  outline-offset: -1px;
+}
