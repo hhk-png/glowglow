@@ -147,6 +147,81 @@ describe('mountGlowEditor', () => {
     expect(domText(el)).toBe(ed.value)
   })
 
+  it('setting marks while folded leaves the rows alone', () => {
+    // regression: a marks patch spans lines, which shiftFolds used to read as an
+    // edit and drag the fold onto the wrong text — losing a row
+    const el = makePre('alpha beta\nbeta gamma\nbeta delta')
+    const ed = mountGlowEditor(el)
+    ed.setFolds([{ from: 1, to: 2 }])
+    const rowText = () => (el.children[1] as HTMLElement).textContent
+    expect(el.children.length).toBe(2)
+    expect(rowText()).toBe('▾beta gamma') // the fold marker precedes the line
+
+    ed.setMarks([{ from: 0, to: 4, cls: 'hit' }])
+    expect(el.children.length).toBe(2)
+    expect(rowText()).toBe('▾beta gamma')
+    expect(ed.value).toBe('alpha beta\nbeta gamma\nbeta delta')
+    expect(el.querySelectorAll('mark.hit').length).toBeGreaterThan(0)
+  })
+
+  it('keeps folded lines when the IME resyncs', () => {
+    // regression: readText only saw the drawn rows, so resyncing after a
+    // composition deleted every folded-away line
+    const el = makePre('a\nb\nc\nd')
+    const ed = mountGlowEditor(el)
+    ed.setFolds([{ from: 1, to: 3 }])
+    expect(el.children.length).toBe(2)
+    el.dispatchEvent(new Event('compositionstart'))
+    el.dispatchEvent(new Event('compositionend'))
+    expect(ed.value).toBe('a\nb\nc\nd')
+    expect(el.children.length).toBe(2)
+  })
+
+  it('leaves folds where they are when a patch is full', () => {
+    // regression: a full patch says the whole document was replaced, so running
+    // the folds through it dragged every one of them to line 0
+    const el = makePre('<Foo>\nplain\n</Foo>x\ny\nz')
+    const lines = mountGlowLines(el)
+    lines.setFolds([{ from: 3, to: 4 }])
+    expect(lines.folds).toEqual([{ from: 3, to: 4 }])
+
+    const doc = lines.document
+    const at = doc.value.indexOf('</Foo>')
+    const patch = doc.update(at, at + 6, '')
+    expect(patch.full).toBe(true) // the pairing flipped, so everything re-decides
+    lines.apply(patch)
+
+    expect(lines.folds).toEqual([{ from: 3, to: 4 }])
+    expect(lines.foldMap.visibleCount).toBe(4) // 5 lines, one hidden
+    expect(el.children.length).toBe(4)
+  })
+
+  it('reports a fold marker\'s current line when it is clicked', () => {
+    // regression: the marker kept the line number it was created with, so a
+    // click after lines shifted toggled the wrong block
+    const el = makePre('l0\nl1\nl2\nl3\nl4\nl5')
+    const seen: number[] = []
+    const ed = mountGlowEditor(el, { onFoldToggle: line => seen.push(line) })
+    ed.setFolds([{ from: 3, to: 5 }])
+    // delete line 1 outright: every fold below it moves up one line
+    beforeInput(el, 'deleteContentBackward', null, rangeAt(el, 3, 6))
+    const marker = el.querySelector('.glow-fold[data-line]') as HTMLElement
+    expect(marker.dataset.line).toBe('3') // the attribute is stale
+    marker.click()
+    expect(seen).toEqual([2]) // but the fold it stands for is on line 2 now
+  })
+
+  it('keeps a fold while typing above it', () => {
+    const el = makePre('a\nb\nc\nd\ne')
+    const ed = mountGlowEditor(el)
+    ed.setFolds([{ from: 2, to: 4 }])
+    expect(el.children.length).toBe(3) // a, b, e
+    beforeInput(el, 'insertText', 'Z', rangeAt(el, 0))
+    expect(ed.value).toBe('Za\nb\nc\nd\ne')
+    expect(el.children.length).toBe(3) // the fold still hides c and d
+    expect(domText(el)).toContain('▾')
+  })
+
   it('undoes and redoes with the keyboard', () => {
     const el = makePre('one two')
     const ed = mountGlowEditor(el)

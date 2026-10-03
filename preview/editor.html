@@ -94,8 +94,6 @@
     // Folding again shows the split: *this page* decides what folds (a brace
     // matcher), the engine only supplies foldMap, and the editor never touches
     // the text when a block collapses.
-    var collapsed = false
-
     function blockFolds() {
       var doc = editor.document
       var stack = []
@@ -118,26 +116,25 @@
       return out
     }
 
+    // Read the folds back from the editor rather than keeping our own list: an
+    // edit shifts their line numbers, and the editor's copy is the current one.
     function toggle(line) {
       var open = blockFolds().filter(function (f) { return f.from === line })[0]
       if (!open) return
+      var current = editor.folds
       var already = current.filter(function (f) { return f.from === open.from })
-      current = already.length
+      editor.setFolds(already.length
         ? current.filter(function (f) { return f.from !== open.from })
-        : current.concat([open])
-      editor.setFolds(current)
+        : current.concat([open]))
       statusEl.textContent = (already.length ? 'unfolded' : 'folded') + ' line ' + (line + 1)
     }
 
-    var current = []
-
     document.getElementById('fold').addEventListener('click', function () {
-      current = blockFolds()
-      editor.setFolds(current)
-      statusEl.textContent = current.length + ' blocks folded'
+      var blocks = blockFolds()
+      editor.setFolds(blocks)
+      statusEl.textContent = blocks.length + ' blocks folded'
     })
     document.getElementById('unfold').addEventListener('click', function () {
-      current = []
       editor.setFolds([])
       statusEl.textContent = 'unfolded'
     })

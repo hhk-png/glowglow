@@ -249,6 +249,12 @@ export interface GlowPatch {
   lines: string[]
   /** True when the whole document was re-rendered; `startLine`/`removed` then cover all of it. */
   full: boolean
+  /**
+   * True when the *text* is untouched and only caller marks changed — the lines
+   * are re-rendered, but nothing was inserted or removed. A renderer that keeps
+   * state tied to line numbers (folds, for one) must not move it for these.
+   */
+  marks?: boolean
 }
 
 export class GlowDocument {
@@ -414,6 +420,7 @@ export class GlowDocument {
       removed: lastLine - startLine + 1,
       lines: this.renderLines(startLine, lastLine + 1),
       full: false,
+      marks: true,
     }
   }
 

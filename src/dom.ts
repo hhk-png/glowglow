@@ -36,6 +36,11 @@ export interface GlowLines {
   readonly document: GlowDocument
   /** Which lines are drawn, given the current folds. */
   readonly foldMap: GlowFoldMap
+  /**
+   * The folds in force, with line numbers as they are *now*. Edits shift folds,
+   * so read them back from here rather than keeping your own list in step.
+   */
+  readonly folds: readonly GlowFold[]
   /** Rebuild every row element from the document. */
   render: () => void
   /** Apply a patch from `document.update()` — swaps just the changed rows. */
@@ -70,6 +75,8 @@ export interface GlowEditor {
   setMarks: (marks: readonly GlowMark[]) => void
   /** Collapse the given line ranges, keeping the caret out of them. */
   setFolds: (folds: readonly GlowFold[]) => void
+  /** The folds in force, with line numbers as they are now. */
+  readonly folds: readonly GlowFold[]
   setValue: (text: string) => void
   destroy: () => void
 }
@@ -187,6 +194,9 @@ export function mountGlowLines(el: HTMLElement, opts: GlowLinesOptions = {}): Gl
     const row = document.createElement('div')
     row.className = ROW
     if (folds.length) {
+      // syntax.css numbers lines with a counter over .glow-line, which would
+      // count *drawn* rows once folds hide some. Pin each row to its real line.
+      row.style.counterReset = `line-counter ${line}`
       const marker = document.createElement('span')
       marker.className = FOLD
       if (hidden > 0) {
@@ -235,6 +245,12 @@ export function mountGlowLines(el: HTMLElement, opts: GlowLinesOptions = {}): Gl
 
   function apply(patch: GlowPatch): void {
     if (patch.full) {
+      // A full patch describes the whole document, not one edit — it says
+      // everything was replaced, so shifting folds through it would drag every
+      // one of them to line 0. It carries no edit location to move them by, so
+      // leave them where they are (the map clips any that fell off the end) and
+      // re-render from the new line count.
+      map = foldMap(folds, doc.lineCount)
       render()
       return
     }
@@ -249,9 +265,12 @@ export function mountGlowLines(el: HTMLElement, opts: GlowLinesOptions = {}): Gl
     const oldFirst = firstRowIn(before, startLine, oldEnd)
     const oldLast = lastRowIn(before, startLine, oldEnd)
 
-    // the folds belong to the text, so they move with it
-    folds = shiftFolds(folds, startLine, patch.removed, patch.lines.length)
-    map = foldMap(folds, doc.lineCount)
+    // Folds belong to the text, so they move with it — but a marks patch only
+    // redraws lines, and moving folds for it would drag them onto the text.
+    if (!patch.marks) {
+      folds = shiftFolds(folds, startLine, patch.removed, patch.lines.length)
+      map = foldMap(folds, doc.lineCount)
+    }
 
     // An edit inside a folded block changes how many lines that fold hides,
     // while no row on screen shows it. Rare, and a full redraw is the safe
@@ -290,6 +309,9 @@ export function mountGlowLines(el: HTMLElement, opts: GlowLinesOptions = {}): Gl
     },
     get foldMap(): GlowFoldMap {
       return map
+    },
+    get folds(): readonly GlowFold[] {
+      return folds
     },
     render,
     apply,
@@ -385,21 +407,40 @@ export function mountGlowEditor(el: HTMLElement, opts: GlowEditorOptions = {}): 
     return { from, to }
   }
 
-  /** The editor's text, read back from the DOM (used to resync after IME). */
+  /**
+   * The editor's text, read back from the DOM (used to resync after IME).
+   * Folded lines are not in the DOM, so they come from the document — which is
+   * right, because nothing can have edited them.
+   */
   function readText(): string {
     const doc = lines.document
+    const rows = childElements(el)
     const out: string[] = []
-    for (let row = 0; row < lines.foldMap.visibleCount; row++)
-      out.push(doc.lineText(lines.foldMap.lineAt(row)))
+    for (let line = 0; line < doc.lineCount; line++) {
+      const row = lines.foldMap.rowOf(line)
+      out.push(row < 0 ? doc.lineText(line) : (rows[row] ? bodyOf(rows[row]!).textContent ?? '' : ''))
+    }
     return out.join('\n')
   }
 
-  /** Apply `step` (edits in ascending, non-overlapping order) and return its inverse. */
+  /**
+   * Apply `step` (edits in ascending, non-overlapping order) and return its
+   * inverse, expressed in the *resulting* text's offsets — which is where the
+   * inverse will be applied. Each edit shifts the ones after it, so a multi-line
+   * indent would otherwise undo against stale offsets and corrupt the text.
+   */
   function applyStep(step: GlowEdit[]): GlowEdit[] {
     const value = text()
     const inverse: GlowEdit[] = []
-    for (const e of step)
-      inverse.push({ from: e.from, to: e.from + e.insert.length, insert: value.slice(e.from, e.to) })
+    let shift = 0
+    for (const e of step) {
+      inverse.push({
+        from: e.from + shift,
+        to: e.from + shift + e.insert.length,
+        insert: value.slice(e.from, e.to),
+      })
+      shift += e.insert.length - (e.to - e.from)
+    }
     // back to front, so the earlier offsets are still valid as we go
     for (let i = step.length - 1; i >= 0; i--) {
       const e = step[i]!
@@ -566,12 +607,19 @@ export function mountGlowEditor(el: HTMLElement, opts: GlowEditorOptions = {}): 
       el.blur()
   }
 
-  /** Clicking a collapsed marker asks the caller what to do about it. */
+  /**
+   * Clicking a collapsed marker asks the caller what to do about it. The line is
+   * resolved from the row the marker currently sits in — a row kept across a
+   * patch would otherwise still be advertising the line number it had then.
+   */
   function onClick(e: MouseEvent): void {
     const target = e.target as HTMLElement | null
     if (!target || !target.classList?.contains(FOLD) || target.dataset.line === undefined)
       return
-    opts.onFoldToggle?.(Number(target.dataset.line))
+    const row = rowIndexOf(el, target)
+    if (row < 0)
+      return
+    opts.onFoldToggle?.(lines.foldMap.lineAt(row))
   }
 
   /** Keep the document in step while the IME owns the DOM. */
@@ -603,6 +651,9 @@ export function mountGlowEditor(el: HTMLElement, opts: GlowEditorOptions = {}): 
     },
     get value(): string {
       return text()
+    },
+    get folds(): readonly GlowFold[] {
+      return lines.folds
     },
     setMarks(marks: readonly GlowMark[]): void {
       // the text does not move, so the caret keeps its offset

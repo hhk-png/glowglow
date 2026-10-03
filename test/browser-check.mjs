@@ -310,6 +310,16 @@ async function main() {
     await evaluate('ed.setFolds([])')
     check('unfolding brings every row back', await evaluate('__probe.lines()') === 5, await evaluate('__probe.lines()'))
 
+    // --- a multi-line indent, then undo (regression: the inverse was built from
+    // pre-edit offsets, so undoing a 3-line indent corrupted the text) ---
+    await evaluate('ed.setValue("aa" + String.fromCharCode(10) + "bb" + String.fromCharCode(10) + "cc"); ed.element.focus(); __probe.setSelection(0, 8)')
+    await cdp.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', windowsVirtualKeyCode: 9, key: 'Tab', code: 'Tab' })
+    check('Tab indents every line', await evaluate('ed.value') === `  aa${String.fromCharCode(10)}  bb${String.fromCharCode(10)}  cc`, await evaluate('JSON.stringify(ed.value)'))
+    await cdp.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', windowsVirtualKeyCode: 90, key: 'z', code: 'KeyZ', modifiers: 2 })
+    await cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', windowsVirtualKeyCode: 90, key: 'z', code: 'KeyZ', modifiers: 2 })
+    check('undoing a multi-line indent restores the text', await evaluate('ed.value') === `aa${String.fromCharCode(10)}bb${String.fromCharCode(10)}cc`, await evaluate('JSON.stringify(ed.value)'))
+    check('the DOM agrees after that undo', await evaluate('__probe.text()') === await evaluate('ed.value'))
+
     // --- typing inside a multi-line comment keeps the whole comment coloured ---
     await evaluate('ed.setValue("/* a\\nb */\\nconst z = 1"); ed.element.focus()')
     await cdp.send('Input.insertText', { text: 'Z' })
