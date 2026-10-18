@@ -3,12 +3,12 @@
 // per-character token kind, which is what everything downstream reads.
 
 import type { GlowDocument } from '../src/document'
-import type { Kind } from '../src/lexer'
+import type { TokenKind } from '../src/lexer'
 import { describe, expect, it } from 'vitest'
 import { glowDocument } from '../src/document'
 import { lex } from '../src/lexer'
 
-const KIND: Record<Kind, string> = {
+const KIND: Record<TokenKind, string> = {
   comment: 'C',
   str: 'S',
   word: 'w',
@@ -106,7 +106,7 @@ function check(seed: number, iterations: number, start: string): void {
   let shadow = start
   for (let n = 0; n < iterations; n++) {
     const { from, to, insert } = randomEdit(rnd, shadow.length)
-    doc.update(from, to, insert)
+    doc.applyEdit(from, to, insert)
     shadow = shadow.slice(0, from) + insert + shadow.slice(to)
     expect(doc.value).toBe(shadow)
     expect(doc.lineCount).toBe(shadow.split('\n').length)
@@ -142,7 +142,7 @@ describe('incremental document', () => {
       for (let k = 0; k < 200; k++) {
         const { from, to, insert } = randomEdit(rnd, start.length)
         const doc = glowDocument(start)
-        doc.update(from, to, insert)
+        doc.applyEdit(from, to, insert)
         const shadow = start.slice(0, from) + insert + start.slice(to)
         expect(doc.value).toBe(shadow)
         const a = docKindMap(doc)
@@ -170,14 +170,14 @@ lines=${lines.join(' | ')}`)
       const back = Array.from({ length: doc.lineCount }, (_, i) => doc.lineText(i)).join('\n')
       expect(back).toBe(text)
       if (text === '' || text.endsWith('\n'))
-        expect(doc.line(doc.lineCount - 1)).toBe('')
+        expect(doc.lineHtml(doc.lineCount - 1)).toBe('')
     }
   })
 
   it('reuses the tail — a one-line edit does not re-lex the file', () => {
     const src = Array.from({ length: 2000 }, (_, i) => `const v${i} = ${i} + f(x)`).join('\n')
     const doc = glowDocument(src)
-    const edit = doc.update(5, 5, 'z')
+    const edit = doc.applyEdit(5, 5, 'z')
     // the edit is on line 0 and changes no cross-line state, so only line 0 is dirty
     expect(edit.startLine).toBe(0)
     expect(edit.lines.length).toBe(1)
@@ -189,11 +189,11 @@ lines=${lines.join(' | ')}`)
   it('follows an unterminated block comment across a later edit', () => {
     const doc = glowDocument('a = 1\nb = 2\nc = 3')
     // open a block comment on line 0; everything after is comment now
-    doc.update(1, 1, '/*')
+    doc.applyEdit(1, 1, '/*')
     expect(docKindMap(doc)).toBe(wholeKindMap(doc.value))
     expect(wholeKindMap(doc.value).slice(2)).toMatch(/^C+$/)
     // close it again
-    doc.update(doc.value.length, doc.value.length, '\n*/ x')
+    doc.applyEdit(doc.value.length, doc.value.length, '\n*/ x')
     expect(docKindMap(doc)).toBe(wholeKindMap(doc.value))
   })
 })

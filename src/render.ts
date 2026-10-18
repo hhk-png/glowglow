@@ -33,7 +33,7 @@ export interface GlowMark {
   cls?: string
 }
 
-export function esc(str: string): string {
+export function escapeHtml(str: string): string {
   // most tokens (identifiers, whitespace) hold nothing to escape, so pay for
   // one scan rather than three replaces
   if (!/[&<>]/.test(str)) {
@@ -42,7 +42,7 @@ export function esc(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
-function escAttr(str: string): string {
+function escapeAttr(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 }
 
@@ -62,14 +62,14 @@ function marked(src: string, s: number, e: number, marks: readonly GlowMark[]): 
     if (b <= a)
       continue
     if (a > at)
-      out += esc(src.slice(at, a))
+      out += escapeHtml(src.slice(at, a))
     const tag = m.tag ?? 'mark'
-    const cls = m.cls ? ` class="${escAttr(m.cls)}"` : ''
-    out += `<${tag}${cls}>${esc(src.slice(a, b))}</${tag}>`
+    const cls = m.cls ? ` class="${escapeAttr(m.cls)}"` : ''
+    out += `<${tag}${cls}>${escapeHtml(src.slice(a, b))}</${tag}>`
     at = b
   }
   if (at < e)
-    out += esc(src.slice(at, e))
+    out += escapeHtml(src.slice(at, e))
   return out
 }
 
@@ -93,7 +93,7 @@ export function renderLine(
     const s = Math.max(ls, t.start)
     const e = Math.min(le, t.end)
     if (s < e) {
-      const inner = marks && marks.length ? marked(src, s, e, marks) : esc(src.slice(s, e))
+      const inner = marks && marks.length ? marked(src, s, e, marks) : escapeHtml(src.slice(s, e))
       out.push(t.tag ? `<${t.tag}>${inner}</${t.tag}>` : inner)
     }
   }

@@ -14,31 +14,31 @@
 
 // --- colouring: tokens in, colour tags out ----------------------------------
 export {
-  classify,
-  classifyWindow,
-  countNames,
-  decideRegions,
-  detectRegions,
+  classifyTokens,
+  classifyTokenWindow,
+  countTagNames,
+  findTagCandidates,
+  selectMarkupRegions,
 } from './classify'
 export type {
-  ClassifiedToken,
-  NameCounts,
-  Region,
   SourceText,
+  TaggedToken,
+  TagNameCounts,
+  TagRegion,
 } from './classify'
 
 // --- the document the editor drives -----------------------------------------
-export { GlowDocument, glowDocument, sameState } from './document'
+export { GlowDocument, glowDocument, sameLexState } from './document'
 export type { GlowPatch } from './document'
 
 // --- folding: which lines a renderer draws ----------------------------------
-export { foldMap, shiftFolds } from './fold'
+export { buildFoldMap, shiftFolds } from './fold'
 export type { GlowFold, GlowFoldMap } from './fold'
 
 // --- lexing: resumable, one segment at a time -------------------------------
 export { lex, lexSegment, tokenText } from './lexer'
-export type { Frame, Kind, LexRun, LexState, Token } from './lexer'
+export type { LexFrame, LexSegmentResult, LexState, Token, TokenKind } from './lexer'
 
 // --- rendering: a line's tokens to a line's markup --------------------------
-export { esc, renderLine } from './render'
+export { escapeHtml, renderLine } from './render'
 export type { GlowMark, RenderToken } from './render'

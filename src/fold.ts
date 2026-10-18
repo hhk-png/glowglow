@@ -4,7 +4,7 @@
 
   So this is just the mapping, kept apart from whatever decided the folds (brace
   matching, an outline, a hand-written list) and from the renderer that uses it —
-  a virtualised list asks `lineAt(row)` and draws, nothing else.
+  a virtualised list asks `lineIndexAt(row)` and draws, nothing else.
 */
 
 export interface GlowFold {
@@ -22,16 +22,16 @@ export interface GlowFoldMap {
   /** How many lines these folds hide in total. */
   readonly hiddenCount: number
   /** How many lines the fold drawn at `row` hides, or 0 when `row` is not a fold. */
-  hiddenAt: (row: number) => number
-  /** The document line drawn at `row`. */
-  lineAt: (row: number) => number
+  hiddenCountAt: (row: number) => number
+  /** Index of the document line drawn at `row`. */
+  lineIndexAt: (row: number) => number
   /** The row a document line is drawn at, or -1 when a fold hides it. */
-  rowOf: (line: number) => number
+  rowIndexAt: (line: number) => number
   /**
    * The row of the fold that hides `line`, or -1 when the line is drawn. Lets a
    * caret parked on a hidden line fall back to the fold's own row.
    */
-  foldRowOf: (line: number) => number
+  foldRowIndexAt: (line: number) => number
 }
 
 interface Run {
@@ -102,13 +102,13 @@ export function shiftFolds(
  * The document line drawn at each visible row, given some collapsed ranges.
  * Folds are clipped to the document, and overlapping ones are dropped.
  *
- *     const map = foldMap([{ from: 2, to: 5 }], doc.lineCount)
- *     map.visibleCount   // 3 fewer rows
- *     map.lineAt(0)      // 0
- *     map.lineAt(3)      // 6 — the line after the fold
- *     map.hiddenAt(2)    // 3 — the row that carries the marker
+ *     const map = buildFoldMap([{ from: 2, to: 5 }], doc.lineCount)
+ *     map.visibleCount      // 3 fewer rows
+ *     map.lineIndexAt(0)    // 0
+ *     map.lineIndexAt(3)    // 6 — the line after the fold
+ *     map.hiddenCountAt(2)  // 3 — the row that carries the marker
  */
-export function foldMap(folds: readonly GlowFold[], lineCount: number): GlowFoldMap {
+export function buildFoldMap(folds: readonly GlowFold[], lineCount: number): GlowFoldMap {
   const runs: Run[] = []
   let hidden = 0
   for (const f of normalize(folds, lineCount)) {
@@ -140,18 +140,18 @@ export function foldMap(folds: readonly GlowFold[], lineCount: number): GlowFold
   return {
     visibleCount: Math.max(0, lineCount - total),
     hiddenCount: total,
-    hiddenAt(row: number): number {
+    hiddenCountAt(row: number): number {
       const i = search(r => r.row <= row)
       const r = runs[i]
       return r && r.row === row ? r.after - r.before : 0
     },
-    lineAt(row: number): number {
+    lineIndexAt(row: number): number {
       // only folds that start *before* this row have pushed it down — the row a
       // fold starts on is its first line, which stays visible
       const i = search(r => r.row < row)
       return row + (i < 0 ? 0 : runs[i]!.after)
     },
-    rowOf(line: number): number {
+    rowIndexAt(line: number): number {
       const inside = search(r => r.from <= line)
       const r = runs[inside]
       if (r && line > r.from && line <= r.to)
@@ -159,7 +159,7 @@ export function foldMap(folds: readonly GlowFold[], lineCount: number): GlowFold
       const i = search(x => x.to < line)
       return line - (i < 0 ? 0 : runs[i]!.after)
     },
-    foldRowOf(line: number): number {
+    foldRowIndexAt(line: number): number {
       const i = search(r => r.from <= line)
       const r = runs[i]
       return r && line > r.from && line <= r.to ? r.row : -1

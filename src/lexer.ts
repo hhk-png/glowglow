@@ -21,10 +21,10 @@
   It does not decide colours — classify.ts does.
 */
 
-export type Kind = 'comment' | 'str' | 'word' | 'num' | 'op' | 'decor' | 'ws'
+export type TokenKind = 'comment' | 'str' | 'word' | 'num' | 'op' | 'decor' | 'ws'
 
 export interface Token {
-  kind: Kind
+  kind: TokenKind
   start: number
   end: number
 }
@@ -76,14 +76,14 @@ interface BlockFrame {
   start: number
 }
 
-export type Frame = StrFrame | InterpFrame | BlockFrame
+export type LexFrame = StrFrame | InterpFrame | BlockFrame
 
 /** Opaque lexer state at a segment boundary. Pass it back to lexSegment verbatim. */
-export type LexState = readonly Frame[]
+export type LexState = readonly LexFrame[]
 
-export interface LexRun {
+export interface LexSegmentResult {
   tokens: Token[]
-  state: Frame[]
+  state: LexFrame[]
 }
 
 // Is the identifier starting at i actually a string prefix (f"…", rf'…', $"…")?
@@ -144,16 +144,16 @@ export function lexSegment(
   src: string,
   from: number,
   to: number,
-  state: readonly Frame[],
+  state: readonly LexFrame[],
   /** Whether this segment reaches the end of the input (so an open literal ends here). */
   eof: boolean = to >= src.length,
-): LexRun {
+): LexSegmentResult {
   const tokens: Token[] = []
   const len = src.length
   // how far the emitted tokens reach, so a construct opened on the last byte
   // (whose handling only runs at the top of the next iteration) can be closed
   let covered = from
-  const emit = (kind: Kind, start: number, end: number) => {
+  const emit = (kind: TokenKind, start: number, end: number) => {
     if (end > start) {
       tokens.push({ kind, start, end })
       covered = end
@@ -163,10 +163,10 @@ export function lexSegment(
   // block frame's opener lies behind us and its piece was emitted by an earlier
   // segment, so the run this segment emits starts here — re-pointing it also
   // discards the stale absolute offset a reused line may have carried.
-  const stack: Frame[] = state.map(f =>
+  const stack: LexFrame[] = state.map(f =>
     f.kind === 'block' ? { kind: 'block', close: f.close, start: from } : { ...f },
   )
-  const top = (): Frame | undefined => stack[stack.length - 1]
+  const top = (): LexFrame | undefined => stack[stack.length - 1]
 
   function pushString(delim: string, mark: Mark, multi: boolean): void {
     stack.push({ kind: 'str', delim, mark, multi })

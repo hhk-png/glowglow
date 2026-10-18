@@ -5,7 +5,7 @@
 import type { GlowDocument } from '../src/document'
 import type { Token } from '../src/lexer'
 import { describe, expect, it } from 'vitest'
-import { classify } from '../src/classify'
+import { classifyTokens } from '../src/classify'
 import { glowDocument } from '../src/document'
 
 /** Tag every token of the document by classifying the whole thing at once. */
@@ -17,7 +17,7 @@ function truthTags(doc: GlowDocument): (string | null)[][] {
     counts.push(ts.length)
     flat.push(...ts)
   }
-  const tagged = classify(doc.value, flat)
+  const tagged = classifyTokens(doc.value, flat)
   const out: (string | null)[][] = []
   let k = 0
   for (const n of counts) {
@@ -103,7 +103,7 @@ function fuzz(seed: number, iterations: number, start: string): void {
     let insert = ''
     for (let i = 0; i < nIns; i++)
       insert += ALPHA[Math.floor(rnd() * ALPHA.length)]
-    doc.update(from, to, insert)
+    doc.applyEdit(from, to, insert)
     shadow = shadow.slice(0, from) + insert + shadow.slice(to)
     expect(doc.value).toBe(shadow)
     checkTags(doc)
@@ -124,21 +124,21 @@ describe('incremental colouring', () => {
 
   it('matches when an unpaired element becomes paired', () => {
     const doc = glowDocument('<Foo>hi')
-    doc.update(doc.value.length, doc.value.length, '</Foo>')
+    doc.applyEdit(doc.value.length, doc.value.length, '</Foo>')
     checkTags(doc)
   })
 
   it('matches when a pair breaks apart', () => {
     const doc = glowDocument('<Foo>hi</Foo> tail')
     const at = doc.value.indexOf('</Foo>')
-    doc.update(at, at + 6, '')
+    doc.applyEdit(at, at + 6, '')
     checkTags(doc)
   })
 
   it('handles prose repaint when a far pair flips', () => {
     const doc = glowDocument('<Foo>\nplain words here\ntail\n</Foo>')
     checkTags(doc)
-    doc.update(doc.value.length, doc.value.length, '\nmore')
+    doc.applyEdit(doc.value.length, doc.value.length, '\nmore')
     checkTags(doc)
   })
 
@@ -155,7 +155,7 @@ describe('incremental colouring', () => {
         let insert = ''
         for (let i = 0; i < nIns; i++)
           insert += ALPHA[Math.floor(rnd() * ALPHA.length)]
-        doc.update(from, to, insert)
+        doc.applyEdit(from, to, insert)
         shadow = shadow.slice(0, from) + insert + shadow.slice(to)
         expect(doc.value).toBe(shadow)
         checkTags(doc)

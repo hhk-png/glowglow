@@ -2,34 +2,34 @@
 // direction of it has to agree with the others.
 
 import { describe, expect, it } from 'vitest'
-import { foldMap, shiftFolds } from '../src/fold'
+import { buildFoldMap, shiftFolds } from '../src/fold'
 
 /** The document line at every visible row, which is what a renderer draws. */
-function rows(folds: Parameters<typeof foldMap>[0], lineCount: number): number[] {
-  const map = foldMap(folds, lineCount)
-  return Array.from({ length: map.visibleCount }, (_, r) => map.lineAt(r))
+function rows(folds: Parameters<typeof buildFoldMap>[0], lineCount: number): number[] {
+  const map = buildFoldMap(folds, lineCount)
+  return Array.from({ length: map.visibleCount }, (_, r) => map.lineIndexAt(r))
 }
 
-describe('foldMap', () => {
+describe('buildFoldMap', () => {
   it('is the identity with nothing folded', () => {
-    const map = foldMap([], 5)
+    const map = buildFoldMap([], 5)
     expect(map.visibleCount).toBe(5)
     expect(rows([], 5)).toEqual([0, 1, 2, 3, 4])
-    expect(map.hiddenAt(2)).toBe(0)
-    expect([0, 1, 2, 3, 4].map(l => map.rowOf(l))).toEqual([0, 1, 2, 3, 4])
+    expect(map.hiddenCountAt(2)).toBe(0)
+    expect([0, 1, 2, 3, 4].map(l => map.rowIndexAt(l))).toEqual([0, 1, 2, 3, 4])
   })
 
   it('keeps the first folded line visible and hides the rest', () => {
-    const map = foldMap([{ from: 2, to: 5 }], 8)
+    const map = buildFoldMap([{ from: 2, to: 5 }], 8)
     expect(map.visibleCount).toBe(5) // 8 lines, 3 hidden
     expect(map.hiddenCount).toBe(3)
     expect(rows([{ from: 2, to: 5 }], 8)).toEqual([0, 1, 2, 6, 7])
-    expect(map.hiddenAt(2)).toBe(3)
-    expect(map.hiddenAt(3)).toBe(0)
-    expect(map.rowOf(2)).toBe(2)
-    expect(map.rowOf(3)).toBe(-1)
-    expect(map.rowOf(5)).toBe(-1)
-    expect(map.rowOf(6)).toBe(3)
+    expect(map.hiddenCountAt(2)).toBe(3)
+    expect(map.hiddenCountAt(3)).toBe(0)
+    expect(map.rowIndexAt(2)).toBe(2)
+    expect(map.rowIndexAt(3)).toBe(-1)
+    expect(map.rowIndexAt(5)).toBe(-1)
+    expect(map.rowIndexAt(6)).toBe(3)
   })
 
   it('handles folds at both ends', () => {
@@ -40,15 +40,15 @@ describe('foldMap', () => {
   it('stacks several folds', () => {
     const folds = [{ from: 1, to: 2 }, { from: 6, to: 9 }]
     expect(rows(folds, 11)).toEqual([0, 1, 3, 4, 5, 6, 10])
-    const map = foldMap(folds, 11)
+    const map = buildFoldMap(folds, 11)
     // rows: 0 1 3 4 5 6 10 — the second fold is drawn on row 5, not 4
-    expect(map.hiddenAt(1)).toBe(1)
-    expect(map.hiddenAt(5)).toBe(3)
-    expect(map.rowOf(4)).toBe(3)
-    expect(map.rowOf(7)).toBe(-1)
+    expect(map.hiddenCountAt(1)).toBe(1)
+    expect(map.hiddenCountAt(5)).toBe(3)
+    expect(map.rowIndexAt(4)).toBe(3)
+    expect(map.rowIndexAt(7)).toBe(-1)
     // a caret parked on a hidden line falls back to the fold's row
-    expect(map.foldRowOf(7)).toBe(5)
-    expect(map.foldRowOf(4)).toBe(-1)
+    expect(map.foldRowIndexAt(7)).toBe(5)
+    expect(map.foldRowIndexAt(4)).toBe(-1)
   })
 
   it('drops folds that hide nothing or overlap an earlier one', () => {
@@ -71,17 +71,17 @@ describe('foldMap', () => {
       [[{ from: 0, to: 99 }], 6],
     ]
     for (const [folds, lineCount] of cases) {
-      const map = foldMap(folds, lineCount)
+      const map = buildFoldMap(folds, lineCount)
       for (let r = 0; r < map.visibleCount; r++) {
-        const line = map.lineAt(r)
+        const line = map.lineIndexAt(r)
         expect(line, `row ${r}`).toBeGreaterThanOrEqual(0)
         expect(line, `row ${r}`).toBeLessThan(lineCount)
-        expect(map.rowOf(line), `row ${r} -> line ${line}`).toBe(r)
+        expect(map.rowIndexAt(line), `row ${r} -> line ${line}`).toBe(r)
       }
       // and every line is either drawn exactly once, or hidden
-      const drawn = new Set(Array.from({ length: map.visibleCount }, (_, r) => map.lineAt(r)))
+      const drawn = new Set(Array.from({ length: map.visibleCount }, (_, r) => map.lineIndexAt(r)))
       for (let l = 0; l < lineCount; l++) {
-        const row = map.rowOf(l)
+        const row = map.rowIndexAt(l)
         if (row >= 0)
           expect(drawn.has(l), `line ${l}`).toBe(true)
         else

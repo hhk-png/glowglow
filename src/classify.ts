@@ -8,19 +8,19 @@
                  are never mis-coloured
     prose between two real tags is left uncoloured
 
-  The whole-input entry point is `classify`. `classifyWindow` runs the same
+  The whole-input entry point is `classifyTokens`. `classifyTokenWindow` runs the same
   passes over a slice of the token stream, taking the document-wide open/close
   region counts and the fact that the slice is bounded by a decided region on
   each side — that is what lets the incremental editor re-colour only the lines
   an edit touched while still seeing markup pairing across the whole file.
 */
 
-import type { Kind, Token } from './lexer'
+import type { Token, TokenKind } from './lexer'
 import { HTML_TAGS, isKeyword } from './keywords'
 import { tokenText } from './lexer'
 
-export interface ClassifiedToken {
-  kind: Kind
+export interface TaggedToken {
+  kind: TokenKind
   start: number
   end: number
   /** HTML element name to wrap in, or null for plain (unwrapped) text */
@@ -29,7 +29,7 @@ export interface ClassifiedToken {
 
 type Role = 'name' | 'attr' | 'text'
 
-export interface Region {
+export interface TagRegion {
   from: number // token index of the '<'
   nameIdx: number // token index of the tag-name word
   to: number // token index of the closing '>' (or '/>')
@@ -42,7 +42,7 @@ export interface Region {
 }
 
 /**
- * Where classify reads the source from. The one-shot API passes a plain string;
+ * Where classifyTokens reads the source from. The one-shot API passes a plain string;
  * the incremental document passes per-line accessors, so a window can be
  * coloured without ever materialising the whole text.
  */
@@ -54,8 +54,8 @@ function readerOf(src: SourceText): { at: (offset: number) => string, of: (tok: 
     : src
 }
 
-/** Region-name -> count, over some set of regions. */
-export interface NameCounts {
+/** Tag-name -> count, over some set of regions. */
+export interface TagNameCounts {
   open: Map<string, number>
   close: Map<string, number>
 }
@@ -65,9 +65,9 @@ const CODEISH_OP = /[=;<>()[\]]/
 
 /**
  * Every candidate `<…>` region in `toks`. A candidate is not yet known to be
- * markup — `decideRegions` rules on that.
+ * markup — `selectMarkupRegions` rules on that.
  */
-export function detectRegions(src: SourceText, toks: Token[]): Region[] {
+export function findTagCandidates(src: SourceText, toks: Token[]): TagRegion[] {
   const n = toks.length
   const { of: text } = readerOf(src)
 
@@ -79,7 +79,7 @@ export function detectRegions(src: SourceText, toks: Token[]): Region[] {
     return -1
   }
 
-  const regions: Region[] = []
+  const regions: TagRegion[] = []
   for (let idx = 0; idx < n; idx++) {
     const t = toks[idx]!
     if (t.kind !== 'op' || text(t) !== '<')
@@ -157,8 +157,8 @@ export function detectRegions(src: SourceText, toks: Token[]): Region[] {
 }
 
 /** Add `regions`' names into a fresh count set. */
-export function countNames(regions: readonly Region[]): NameCounts {
-  const counts: NameCounts = { open: new Map(), close: new Map() }
+export function countTagNames(regions: readonly TagRegion[]): TagNameCounts {
+  const counts: TagNameCounts = { open: new Map(), close: new Map() }
   for (const r of regions) {
     const m = r.closer ? counts.close : counts.open
     m.set(r.name, (m.get(r.name) ?? 0) + 1)
@@ -167,7 +167,7 @@ export function countNames(regions: readonly Region[]): NameCounts {
 }
 
 /** The regions that really are markup, given document-wide name counts. */
-export function decideRegions(regions: readonly Region[], counts: NameCounts): Region[] {
+export function selectMarkupRegions(regions: readonly TagRegion[], counts: TagNameCounts): TagRegion[] {
   const paired = (name: string): boolean =>
     (counts.open.get(name) ?? 0) > 0 && (counts.close.get(name) ?? 0) > 0
   return regions.filter((r) => {
@@ -188,19 +188,19 @@ export function decideRegions(regions: readonly Region[], counts: NameCounts): R
  * between that neighbour and the slice's first/last region is only text when the
  * slice really is bounded by markup.
  */
-export function classifyWindow(
+export function classifyTokenWindow(
   src: SourceText,
   toks: Token[],
-  counts: NameCounts,
+  counts: TagNameCounts,
   leftBounded: boolean,
   rightBounded: boolean,
-): ClassifiedToken[] {
+): TaggedToken[] {
   const n = toks.length
   const { at, of: text } = readerOf(src)
   // eslint-disable-next-line e18e/prefer-array-fill -- its suggested `.fill()` form widens to unknown[]
   const role: Array<Role | null> = Array.from({ length: n }, () => null)
 
-  const decided = decideRegions(detectRegions(src, toks), counts)
+  const decided = selectMarkupRegions(findTagCandidates(src, toks), counts)
 
   for (const r of decided) {
     role[r.nameIdx] = 'name'
@@ -270,7 +270,7 @@ export function classifyWindow(
   }
 
   // --- final pass: kind + context -> tag -------------------------------------
-  const out: ClassifiedToken[] = []
+  const out: TaggedToken[] = []
   for (let i = 0; i < n; i++) {
     const t = toks[i]!
     let tag: string | null = null
@@ -317,6 +317,6 @@ export function classifyWindow(
   return out
 }
 
-export function classify(src: SourceText, toks: Token[]): ClassifiedToken[] {
-  return classifyWindow(src, toks, countNames(detectRegions(src, toks)), false, false)
+export function classifyTokens(src: SourceText, toks: Token[]): TaggedToken[] {
+  return classifyTokenWindow(src, toks, countTagNames(findTagCandidates(src, toks)), false, false)
 }

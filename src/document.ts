@@ -12,19 +12,19 @@
   Colouring splits into two coupled halves, both maintained here:
     - the lexer state at line boundaries (see lexSegment)
     - document-wide open/close counts of candidate tag names, which decide which
-      `<Foo>` regions are markup (see classify.decideRegions)
+      `<Foo>` regions are markup (see classify.selectMarkupRegions)
 */
 
-import type { NameCounts, Region, SourceText } from './classify'
+import type { SourceText, TagNameCounts, TagRegion } from './classify'
 import type { GlowOptions } from './glow'
-import type { Frame, Token } from './lexer'
+import type { LexFrame, Token } from './lexer'
 import type { GlowMark, RenderToken } from './render'
-import { classifyWindow, countNames, decideRegions, detectRegions } from './classify'
+import { classifyTokenWindow, countTagNames, findTagCandidates, selectMarkupRegions } from './classify'
 import { lexSegment } from './lexer'
 import { renderLine } from './render'
 
 /** Compare two lexer states by the future they imply; `block.start` is a past detail. */
-export function sameState(a: readonly Frame[], b: readonly Frame[]): boolean {
+export function sameLexState(a: readonly LexFrame[], b: readonly LexFrame[]): boolean {
   if (a.length !== b.length)
     return false
   for (let i = 0; i < a.length; i++) {
@@ -48,7 +48,7 @@ export function sameState(a: readonly Frame[], b: readonly Frame[]): boolean {
   return true
 }
 
-const EMPTY_STATE: Frame[] = []
+const EMPTY_STATE: LexFrame[] = []
 const EMPTY_TOKENS: Token[] = []
 const EMPTY_TAGS: (string | null)[] = []
 
@@ -197,7 +197,7 @@ interface OldSide {
   lo: number
   hi: number
   /** Candidate regions the old text had between `lo` and `hi`. */
-  cands: Region[]
+  cands: TagRegion[]
 }
 
 /**
@@ -272,11 +272,11 @@ export class GlowDocument {
   /** Per line: tokens covering the line's segment (incl. its trailing '\n'), offsets relative to the line start. */
   private toks: Token[][]
   /** Per line: lexer state at the line start. */
-  private states: Frame[][]
+  private states: LexFrame[][]
   /** Per line: colour tag of each token, parallel to `toks`. */
   private tags: (string | null)[][]
   /** Document-wide candidate-region name counts, driving `paired`. */
-  private counts: NameCounts
+  private counts: TagNameCounts
   /** The regions that are markup, sorted by `s`. */
   private decided: Array<{ s: number, e: number }>
   /** Lone `<`/`>` operator tokens in the whole document — 0 means plain code. */
@@ -316,7 +316,7 @@ export class GlowDocument {
   }
 
   /** Index of the line containing `offset`. */
-  lineAt(offset: number): number {
+  lineIndexAt(offset: number): number {
     return lineOf(this.starts, Math.max(0, Math.min(offset, this.len)))
   }
 
@@ -383,7 +383,7 @@ export class GlowDocument {
   }
 
   /** Rendered inner HTML of line `i` — no `.glow-line` wrapper. */
-  line(i: number): string {
+  lineHtml(i: number): string {
     const toks = this.toks[i]!
     const tags = this.tags[i]!
     const rt: RenderToken[] = []
@@ -428,7 +428,7 @@ export class GlowDocument {
   render(opts: GlowOptions = {}): string {
     const out: string[] = []
     for (let i = 0; i < this.starts.length; i++) {
-      const inner = this.line(i)
+      const inner = this.lineHtml(i)
       out.push(opts.numbered ? `<span class="glow-line">${inner}</span>` : inner)
     }
     return out.join('\n')
@@ -438,7 +438,7 @@ export class GlowDocument {
    * Replace `[from, to)` with `insert`. Re-lexes and re-colours from the touched
    * line until the context matches the old one again, then reuses the rest.
    */
-  update(from: number, to: number, insert: string): GlowPatch {
+  applyEdit(from: number, to: number, insert: string): GlowPatch {
     const oldLines = this.lines
     const oldStarts = this.starts
     const oldToks = this.toks
@@ -486,17 +486,17 @@ export class GlowDocument {
       return { startLine: 0, removed: oldLineCount, lines: this.renderLines(0, re.lines.length), full: true }
     }
 
-    let state: readonly Frame[] = oldStates[startLine]!
+    let state: readonly LexFrame[] = oldStates[startLine]!
     let converged = -1
     // lex the dirty lines into locals — the common path below must not copy the file
     const dirtyLines: string[] = []
     const dirtyToks: Token[][] = []
-    const dirtyStates: Frame[][] = []
+    const dirtyStates: LexFrame[][] = []
 
     for (let line = startLine; line < totalNewLines; line++) {
       const text = lineTextAt(line)
       dirtyLines.push(text)
-      dirtyStates.push(state as Frame[])
+      dirtyStates.push(state as LexFrame[])
       const run = lexSegment(text, 0, text.length, state, false)
       dirtyToks.push(run.tokens.length === 0 ? EMPTY_TOKENS : run.tokens)
       state = run.state.length === 0 ? EMPTY_STATE : run.state
@@ -505,7 +505,7 @@ export class GlowDocument {
       const next = line + 1
       if (next > endLine) {
         const o = next - deltaLines
-        if (o >= 0 && o < oldLineCount && sameState(state, oldStates[o]!)) {
+        if (o >= 0 && o < oldLineCount && sameLexState(state, oldStates[o]!)) {
           converged = next
           break
         }
@@ -523,7 +523,7 @@ export class GlowDocument {
     const oldAngles = countAngles(at, oldStarts, oldToks, startLine, oldEndLine)
     const oldLo = !hadAngles || candidateSafe(at, oldStarts, oldToks, oldEdgeLo) ? oldEdgeLo : safeLeft(at, oldStarts, oldToks, oldEdgeLo)
     const oldHi = !hadAngles || candidateSafe(at, oldStarts, oldToks, oldEdgeHi) ? oldEdgeHi : safeRight(at, oldStarts, oldToks, oldEdgeHi, oldLen)
-    const oldCands = detectRegions(this.src, tokensInRange(oldStarts, oldToks, oldLo, oldHi))
+    const oldCands = findTagCandidates(this.src, tokensInRange(oldStarts, oldToks, oldLo, oldHi))
     const oldSide: OldSide = { len: oldLen, edgeLo: oldEdgeLo, edgeHi: oldEdgeHi, hadAngles, angles: oldAngles, lo: oldLo, hi: oldHi, cands: oldCands }
 
     let window: { loLine: number, hiLine: number } | null
@@ -593,7 +593,7 @@ export class GlowDocument {
   /** Rendered inner HTML for lines [lo, hi) — no wrappers. */
   private renderLines(lo: number, hi: number): string[] {
     const out: string[] = []
-    for (let i = lo; i < hi; i++) out.push(this.line(i))
+    for (let i = lo; i < hi; i++) out.push(this.lineHtml(i))
     return out
   }
 
@@ -612,11 +612,11 @@ export class GlowDocument {
   /** Full recompute of counts, decided regions and tags. */
   private rebuild(): void {
     const flat = this.flatLines(this.starts, this.toks, 0, this.starts.length)
-    const candidates = detectRegions(this.src, flat)
-    this.counts = countNames(candidates)
-    this.decided = decideRegions(candidates, this.counts).map(r => ({ s: r.start, e: r.end }))
+    const candidates = findTagCandidates(this.src, flat)
+    this.counts = countTagNames(candidates)
+    this.decided = selectMarkupRegions(candidates, this.counts).map(r => ({ s: r.start, e: r.end }))
     this.angleCount = countAngles(off => this.at(off), this.starts, this.toks, 0, this.starts.length)
-    const tagged = classifyWindow(this.src, flat, this.counts, false, false)
+    const tagged = classifyTokenWindow(this.src, flat, this.counts, false, false)
     this.tags = []
     let k = 0
     for (let i = 0; i < this.toks.length; i++) {
@@ -685,13 +685,13 @@ export class GlowDocument {
     this.angleCount += newAngles - old.angles
     const newLo = !this.angleCount || candidateSafe(at, this.starts, this.toks, newEdgeLo) ? newEdgeLo : safeLeft(at, this.starts, this.toks, newEdgeLo)
     const newHi = !this.angleCount || candidateSafe(at, this.starts, this.toks, newEdgeHi) ? newEdgeHi : safeRight(at, this.starts, this.toks, newEdgeHi, newLen)
-    const newCands = detectRegions(this.src, tokensInRange(this.starts, this.toks, newLo, newHi))
+    const newCands = findTagCandidates(this.src, tokensInRange(this.starts, this.toks, newLo, newHi))
 
     // --- update document-wide counts and see whether any name changed sides ---
     const isPaired = (name: string): boolean =>
       (this.counts.open.get(name) ?? 0) > 0 && (this.counts.close.get(name) ?? 0) > 0
     const touched = new Set<string>()
-    const bump = (r: Region, by: number) => {
+    const bump = (r: TagRegion, by: number) => {
       touched.add(r.name)
       const m = r.closer ? this.counts.close : this.counts.open
       m.set(r.name, (m.get(r.name) ?? 0) + by)
@@ -756,12 +756,12 @@ export class GlowDocument {
       return null
     }
     const windowToks = tokensInRange(this.starts, this.toks, wLo, wHi)
-    const tagged = classifyWindow(this.src, windowToks, this.counts, leftBounded, rightBounded)
+    const tagged = classifyTokenWindow(this.src, windowToks, this.counts, leftBounded, rightBounded)
 
     // --- rebuild the decided list over the window, shifting the tail ---
     const tail = this.decided.filter(r => r.s >= wHiOld).map(r => ({ s: r.s + delta, e: r.e + delta }))
     const head = this.decided.filter(r => r.e <= wLo)
-    const fresh = decideRegions(detectRegions(this.src, windowToks), this.counts)
+    const fresh = selectMarkupRegions(findTagCandidates(this.src, windowToks), this.counts)
       .map(r => ({ s: r.start, e: r.end }))
     this.decided = [...head, ...fresh, ...tail]
 
@@ -838,20 +838,20 @@ function splitLines(text: string): string[] {
 }
 
 /** Lex each line's text on its own, carrying the state across lines. */
-function lexLines(lines: string[]): { lines: string[], starts: number[], toks: Token[][], states: Frame[][] } {
+function lexLines(lines: string[]): { lines: string[], starts: number[], toks: Token[][], states: LexFrame[][] } {
   const count = lines.length
   const starts: number[] = []
   const toks: Token[][] = []
-  const states: Frame[][] = []
+  const states: LexFrame[][] = []
   starts.length = count
   toks.length = count
   states.length = count
-  let state: readonly Frame[] = EMPTY_STATE
+  let state: readonly LexFrame[] = EMPTY_STATE
   let pos = 0
   for (let i = 0; i < count; i++) {
     const line = lines[i]!
     starts[i] = pos
-    states[i] = state.length === 0 ? EMPTY_STATE : (state as Frame[])
+    states[i] = state.length === 0 ? EMPTY_STATE : (state as LexFrame[])
     // offsets come back relative to the line, which is how they are stored.
     // Each line is its own segment, so only the caller knows where the input ends.
     const run = lexSegment(line, 0, line.length, state, false)

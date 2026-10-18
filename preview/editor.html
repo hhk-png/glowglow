@@ -92,7 +92,7 @@
     findEl.addEventListener('input', function () { find(findEl.value) })
 
     // Folding again shows the split: *this page* decides what folds (a brace
-    // matcher), the engine only supplies foldMap, and the editor never touches
+    // matcher), the engine only supplies buildFoldMap, and the editor never touches
     // the text when a block collapses.
     function blockFolds() {
       var doc = editor.document
@@ -104,7 +104,7 @@
         if (/^\s*\}/.test(t) && stack.length)
           folds.push({ from: stack.pop(), to: i })
       }
-      // nested blocks overlap, and foldMap keeps the outer one — so do the same
+      // nested blocks overlap, and buildFoldMap keeps the outer one — so do the same
       // here, or the page's idea of what is folded stops matching the engine's
       folds.sort(function (a, b) { return a.from - b.from })
       var out = []

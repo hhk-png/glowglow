@@ -4,18 +4,18 @@
 
 import { describe, expect, it } from 'vitest'
 import {
-  classify,
-  classifyWindow,
-  countNames,
-  decideRegions,
-  detectRegions,
-  esc,
+  classifyTokens,
+  classifyTokenWindow,
+  countTagNames,
+  escapeHtml,
+  findTagCandidates,
   GlowDocument,
   glowDocument,
   lex,
   lexSegment,
   renderLine,
-  sameState,
+  sameLexState,
+  selectMarkupRegions,
   tokenText,
 } from '../src/incremental'
 
@@ -28,15 +28,15 @@ describe('glowglow/incremental', () => {
     const head = lexSegment(src, 0, 6, [])
     const tail = lexSegment(src, 6, src.length, head.state)
     expect([...head.tokens, ...tail.tokens].map(t => tokenText(src, t)).join('')).toBe(src)
-    expect(sameState(head.state, tail.state)).toBe(true)
+    expect(sameLexState(head.state, tail.state)).toBe(true)
   })
 
   it('classifies, and classifies a window against whole-document counts', () => {
-    const counts = countNames(detectRegions(src, toks))
-    const whole = classify(src, toks).map(t => t.tag)
-    const windowed = classifyWindow(src, toks, counts, false, false).map(t => t.tag)
+    const counts = countTagNames(findTagCandidates(src, toks))
+    const whole = classifyTokens(src, toks).map(t => t.tag)
+    const windowed = classifyTokenWindow(src, toks, counts, false, false).map(t => t.tag)
     expect(windowed).toEqual(whole)
-    expect(decideRegions(detectRegions(src, toks), counts).length).toBeGreaterThan(0)
+    expect(selectMarkupRegions(findTagCandidates(src, toks), counts).length).toBeGreaterThan(0)
   })
 
   it('renders one line, escaping as it goes', () => {
@@ -45,7 +45,7 @@ describe('glowglow/incremental', () => {
     const html = renderLine(line, t.map(x => ({ ...x, tag: 'i' })), 0, 0, line.length)
     expect(html).toContain('&lt;')
     expect(html).toContain('&amp;')
-    expect(esc('<&>')).toBe('&lt;&amp;&gt;')
+    expect(escapeHtml('<&>')).toBe('&lt;&amp;&gt;')
   })
 
   it('lays caller ranges over the output, splitting tokens', () => {
@@ -70,8 +70,8 @@ describe('glowglow/incremental', () => {
     const doc = glowDocument('first line\nsecond line')
     const at = doc.value.indexOf('second')
     doc.setMarks([{ from: at, to: at + 6, cls: 'hit' }])
-    expect(doc.line(1)).toContain('<mark class="hit">second</mark>')
-    expect(doc.line(0)).not.toContain('<mark')
+    expect(doc.lineHtml(1)).toContain('<mark class="hit">second</mark>')
+    expect(doc.lineHtml(0)).not.toContain('<mark')
     const patch = doc.setMarks([{ from: at, to: at + 6, cls: 'hit' }])
     expect(patch.startLine).toBe(1)
   })
@@ -79,18 +79,18 @@ describe('glowglow/incremental', () => {
   it('keeps marks on their text across an edit', () => {
     const doc = glowDocument('one two three')
     doc.setMarks([{ from: 4, to: 7, cls: 'hit' }])
-    doc.update(0, 0, 'XX') // an edit before the mark shifts it
+    doc.applyEdit(0, 0, 'XX') // an edit before the mark shifts it
     expect(doc.value).toBe('XXone two three')
-    expect(doc.line(0)).toContain('<mark class="hit">two</mark>')
+    expect(doc.lineHtml(0)).toContain('<mark class="hit">two</mark>')
     // an edit inside the mark grows it rather than losing it
-    doc.update(5, 5, '-')
-    expect(doc.line(0)).toContain('two')
+    doc.applyEdit(5, 5, '-')
+    expect(doc.lineHtml(0)).toContain('two')
   })
 
   it('hands out the document class itself, not just the factory', () => {
     const doc = glowDocument('one')
     expect(doc).toBeInstanceOf(GlowDocument)
-    expect(doc.update(3, 3, '\ntwo').lines.length).toBeGreaterThan(0)
+    expect(doc.applyEdit(3, 3, '\ntwo').lines.length).toBeGreaterThan(0)
     expect(doc.lineCount).toBe(2)
   })
 })

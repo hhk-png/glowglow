@@ -21,7 +21,7 @@ import type { GlowDocument, GlowPatch } from './document'
 import type { GlowFold, GlowFoldMap } from './fold'
 import type { GlowMark } from './render'
 import { glowDocument } from './document'
-import { foldMap, shiftFolds } from './fold'
+import { buildFoldMap, shiftFolds } from './fold'
 
 export interface GlowLinesOptions {
   /** Initial text. Defaults to the element's current text. */
@@ -43,7 +43,7 @@ export interface GlowLines {
   readonly folds: readonly GlowFold[]
   /** Rebuild every row element from the document. */
   render: () => void
-  /** Apply a patch from `document.update()` — swaps just the changed rows. */
+  /** Apply a patch from `document.applyEdit()` — swaps just the changed rows. */
   apply: (patch: GlowPatch) => void
   /** Replace the callers' ranges (search hits, diagnostics) and redraw them. */
   setMarks: (marks: readonly GlowMark[]) => void
@@ -186,7 +186,7 @@ function boundary(text: string, at: number, type: string): { from: number, to: n
 export function mountGlowLines(el: HTMLElement, opts: GlowLinesOptions = {}): GlowLines {
   let doc = glowDocument(opts.value ?? el.textContent ?? '')
   let folds: GlowFold[] = []
-  let map = foldMap(folds, doc.lineCount)
+  let map = buildFoldMap(folds, doc.lineCount)
 
   el.classList.add('glow-lines')
 
@@ -208,7 +208,7 @@ export function mountGlowLines(el: HTMLElement, opts: GlowLinesOptions = {}): Gl
     }
     const body = document.createElement('span')
     body.className = BODY
-    const html = doc.line(line) || '<br>'
+    const html = doc.lineHtml(line) || '<br>'
     // an empty line needs a <br> to keep its height
     body.innerHTML = opts.numbered ? `<span class="glow-line">${html}</span>` : html
     row.appendChild(body)
@@ -218,7 +218,7 @@ export function mountGlowLines(el: HTMLElement, opts: GlowLinesOptions = {}): Gl
   function render(): void {
     const frag = document.createDocumentFragment()
     for (let row = 0; row < map.visibleCount; row++)
-      frag.appendChild(makeRow(map.lineAt(row), map.hiddenAt(row)))
+      frag.appendChild(makeRow(map.lineIndexAt(row), map.hiddenCountAt(row)))
     el.textContent = ''
     el.appendChild(frag)
   }
@@ -226,7 +226,7 @@ export function mountGlowLines(el: HTMLElement, opts: GlowLinesOptions = {}): Gl
   /** The first row drawn for a document line in [a, b), or -1. */
   function firstRowIn(m: GlowFoldMap, a: number, b: number): number {
     for (let l = a; l < b; l++) {
-      const r = m.rowOf(l)
+      const r = m.rowIndexAt(l)
       if (r >= 0)
         return r
     }
@@ -236,7 +236,7 @@ export function mountGlowLines(el: HTMLElement, opts: GlowLinesOptions = {}): Gl
   /** The last row drawn for a document line in [a, b), or -1. */
   function lastRowIn(m: GlowFoldMap, a: number, b: number): number {
     for (let l = b - 1; l >= a; l--) {
-      const r = m.rowOf(l)
+      const r = m.rowIndexAt(l)
       if (r >= 0)
         return r
     }
@@ -250,7 +250,7 @@ export function mountGlowLines(el: HTMLElement, opts: GlowLinesOptions = {}): Gl
       // one of them to line 0. It carries no edit location to move them by, so
       // leave them where they are (the map clips any that fell off the end) and
       // re-render from the new line count.
-      map = foldMap(folds, doc.lineCount)
+      map = buildFoldMap(folds, doc.lineCount)
       render()
       return
     }
@@ -269,7 +269,7 @@ export function mountGlowLines(el: HTMLElement, opts: GlowLinesOptions = {}): Gl
     // redraws lines, and moving folds for it would drag them onto the text.
     if (!patch.marks) {
       folds = shiftFolds(folds, startLine, patch.removed, patch.lines.length)
-      map = foldMap(folds, doc.lineCount)
+      map = buildFoldMap(folds, doc.lineCount)
     }
 
     // An edit inside a folded block changes how many lines that fold hides,
@@ -296,7 +296,7 @@ export function mountGlowLines(el: HTMLElement, opts: GlowLinesOptions = {}): Gl
     for (let r = oldFirst; r <= oldLast; r++) kids[r]?.remove()
     const frag = document.createDocumentFragment()
     for (let r = newFirst; r <= newLast; r++)
-      frag.appendChild(makeRow(map.lineAt(r), map.hiddenAt(r)))
+      frag.appendChild(makeRow(map.lineIndexAt(r), map.hiddenCountAt(r)))
     el.insertBefore(frag, anchor)
   }
 
@@ -320,12 +320,12 @@ export function mountGlowLines(el: HTMLElement, opts: GlowLinesOptions = {}): Gl
     },
     setFolds(next: readonly GlowFold[]): void {
       folds = [...next]
-      map = foldMap(folds, doc.lineCount)
+      map = buildFoldMap(folds, doc.lineCount)
       render()
     },
     setValue(value: string): void {
       doc = glowDocument(value)
-      map = foldMap(folds, doc.lineCount)
+      map = buildFoldMap(folds, doc.lineCount)
       render()
     },
     destroy(): void {
@@ -362,13 +362,13 @@ export function mountGlowEditor(el: HTMLElement, opts: GlowEditorOptions = {}): 
 
   function setCaret(offset: number): void {
     const doc = lines.document
-    const line = doc.lineAt(offset)
-    let row = lines.foldMap.rowOf(line)
+    const line = doc.lineIndexAt(offset)
+    let row = lines.foldMap.rowIndexAt(line)
     let column = offset - doc.lineStart(line)
     if (row < 0) {
       // the line is folded away: park on the fold's own row, at the end of it
-      row = lines.foldMap.foldRowOf(line)
-      column = doc.lineText(doc.lineAt(row)).length
+      row = lines.foldMap.foldRowIndexAt(line)
+      column = doc.lineText(doc.lineIndexAt(row)).length
     }
     const rowEl = childElements(el)[row]
     const sel = window.getSelection()
@@ -392,7 +392,7 @@ export function mountGlowEditor(el: HTMLElement, opts: GlowEditorOptions = {}): 
     const rows = childElements(el)
     if (row < 0 || !rows[row])
       return 0
-    const line = lines.foldMap.lineAt(row)
+    const line = lines.foldMap.lineIndexAt(row)
     return lines.document.lineStart(line) + columnOf(bodyOf(rows[row]!), r.startContainer, r.startOffset)
   }
 
@@ -401,7 +401,7 @@ export function mountGlowEditor(el: HTMLElement, opts: GlowEditorOptions = {}): 
     const rows = childElements(el)
     const a = rowIndexOf(el, r.startContainer)
     const b = rowIndexOf(el, r.endContainer)
-    const lineOf = (row: number): number => lines.foldMap.lineAt(row)
+    const lineOf = (row: number): number => lines.foldMap.lineIndexAt(row)
     const from = a < 0 ? caretOffset() : lines.document.lineStart(lineOf(a)) + columnOf(bodyOf(rows[a]!), r.startContainer, r.startOffset)
     const to = b < 0 ? from : lines.document.lineStart(lineOf(b)) + columnOf(bodyOf(rows[b]!), r.endContainer, r.endOffset)
     return { from, to }
@@ -417,7 +417,7 @@ export function mountGlowEditor(el: HTMLElement, opts: GlowEditorOptions = {}): 
     const rows = childElements(el)
     const out: string[] = []
     for (let line = 0; line < doc.lineCount; line++) {
-      const row = lines.foldMap.rowOf(line)
+      const row = lines.foldMap.rowIndexAt(line)
       out.push(row < 0 ? doc.lineText(line) : (rows[row] ? bodyOf(rows[row]!).textContent ?? '' : ''))
     }
     return out.join('\n')
@@ -444,7 +444,7 @@ export function mountGlowEditor(el: HTMLElement, opts: GlowEditorOptions = {}): 
     // back to front, so the earlier offsets are still valid as we go
     for (let i = step.length - 1; i >= 0; i--) {
       const e = step[i]!
-      lines.apply(lines.document.update(e.from, e.to, e.insert))
+      lines.apply(lines.document.applyEdit(e.from, e.to, e.insert))
     }
     return inverse
   }
@@ -548,7 +548,7 @@ export function mountGlowEditor(el: HTMLElement, opts: GlowEditorOptions = {}): 
     const b = rowIndexOf(el, r.endContainer)
     if (a < 0 || b < 0)
       return null
-    return { first: lines.foldMap.lineAt(a), last: lines.foldMap.lineAt(b) }
+    return { first: lines.foldMap.lineIndexAt(a), last: lines.foldMap.lineIndexAt(b) }
   }
 
   function shiftLines(out: boolean): void {
@@ -619,7 +619,7 @@ export function mountGlowEditor(el: HTMLElement, opts: GlowEditorOptions = {}): 
     const row = rowIndexOf(el, target)
     if (row < 0)
       return
-    opts.onFoldToggle?.(lines.foldMap.lineAt(row))
+    opts.onFoldToggle?.(lines.foldMap.lineIndexAt(row))
   }
 
   /** Keep the document in step while the IME owns the DOM. */

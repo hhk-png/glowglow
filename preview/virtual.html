@@ -8,7 +8,7 @@
   collapse away.
 
   Note what decides *what* folds: the page, by matching braces. The engine only
-  supplies `foldMap()` — a projection from document lines to visible rows — so a
+  supplies `buildFoldMap()` — a projection from document lines to visible rows — so a
   brace matcher, an outline or a language server all plug into the same renderer.
   Folding never touches the document.
 
@@ -88,7 +88,7 @@
     }
 
     var collapsed = {} // the folds the user has closed
-    var map = window.glowglow.foldMap([], doc.lineCount)
+    var map = window.glowglow.buildFoldMap([], doc.lineCount)
 
     function rebuild(collapseAll) {
       var folds = []
@@ -100,7 +100,7 @@
         collapsed = {}
         for (var k in foldable) collapsed[k] = true
       }
-      map = window.glowglow.foldMap(folds, doc.lineCount)
+      map = window.glowglow.buildFoldMap(folds, doc.lineCount)
       spacer.style.height = map.visibleCount * ROW_H + 'px'
       view.scrollTop = Math.min(view.scrollTop, Math.max(0, spacer.offsetHeight - view.clientHeight))
       render()
@@ -114,15 +114,15 @@
       var t = performance.now()
       var html = ''
       for (var row = first; row < last; row++) {
-        var line = map.lineAt(row)
-        var hidden = map.hiddenAt(row)
+        var line = map.lineIndexAt(row)
+        var hidden = map.hiddenCountAt(row)
         html += '<div class="row" data-row="' + row + '">'
           + '<span class="gutter">'
           + (foldable[line] !== undefined
             ? '<span class="fold" data-line="' + line + '">' + (collapsed[line] ? '▸' : '▾') + '</span>'
             : '<span class="fold"></span>')
           + (line + 1) + '</span>'
-          + '<span class="line">' + (doc.line(line) || '<br>')
+          + '<span class="line">' + (doc.lineHtml(line) || '<br>')
           + (hidden ? ' <span class="marker">⋯ ' + hidden + ' lines</span>' : '')
           + '</span></div>'
       }

@@ -13,7 +13,7 @@
   than re-deriving that.
 */
 
-import { classify } from './classify'
+import { classifyTokens } from './classify'
 import { lex } from './lexer'
 import { renderLine } from './render'
 
@@ -57,7 +57,7 @@ function render(text: string, opts: GlowOptions): string {
     return ''
   }
 
-  const toks = classify(text, lex(text))
+  const toks = classifyTokens(text, lex(text))
   const out: string[] = []
   let offset = 0
   let from = 0

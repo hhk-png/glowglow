@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { classify } from '../src/classify'
+import { classifyTokens } from '../src/classify'
 import { lex } from '../src/lexer'
 
 function esc(s: string): string {
@@ -8,7 +8,7 @@ function esc(s: string): string {
 
 /** render the whole src the way the renderer would, for assertions on <b>/<strong>/… */
 function html(src: string): string {
-  const toks = classify(src, lex(src))
+  const toks = classifyTokens(src, lex(src))
   let out = ''
   let cursor = 0
   for (const t of toks) {
@@ -25,7 +25,7 @@ function html(src: string): string {
   return out
 }
 
-describe('classify — semantic colour tags', () => {
+describe('classifyTokens — semantic colour tags', () => {
   it('keywords -> strong, other identifiers -> b', () => {
     expect(html('const x = payload')).toContain('<strong>const</strong>')
     expect(html('const x = payload')).toContain('<b>payload</b>')
@@ -113,7 +113,7 @@ describe('classify — semantic colour tags', () => {
   })
 })
 
-describe('classify — candidate rejection', () => {
+describe('classifyTokens — candidate rejection', () => {
   it('a trailing < with nothing after it is just an operator', () => {
     expect(html('a <')).toBe('<b>a</b> <i>&lt;</i>')
   })
@@ -140,7 +140,7 @@ describe('classify — candidate rejection', () => {
   })
 })
 
-describe('classify — prose detection between real tags', () => {
+describe('classifyTokens — prose detection between real tags', () => {
   it('a code-ish operator in the gap keeps it code-coloured', () => {
     const h = html('<p>a</p> = <b>c</b>')
     expect(h).toContain('<i>=</i>')

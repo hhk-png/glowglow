@@ -8,9 +8,9 @@
 // If either breaks, the incremental engine silently mis-colours — so they are
 // pinned here rather than left to the parity test alone.
 
-import type { Frame, Token } from '../src/lexer'
+import type { LexFrame, Token } from '../src/lexer'
 import { describe, expect, it } from 'vitest'
-import { classify } from '../src/classify'
+import { classifyTokens } from '../src/classify'
 import { lex, lexSegment } from '../src/lexer'
 
 /** Split every multi-line token at each '\n', keeping the newline on the left piece. */
@@ -33,7 +33,7 @@ function splitAtNewlines(src: string, toks: Token[]): Token[] {
 /** Lex line by line, carrying the state across each newline — what the editor does. */
 function lexLines(src: string): Token[] {
   const out: Token[] = []
-  let state: readonly Frame[] = []
+  let state: readonly LexFrame[] = []
   let from = 0
   const run = (to: number) => {
     const r = lexSegment(src, from, to, state)
@@ -63,7 +63,7 @@ const TAG_CODE: Record<string, string> = {
 }
 function tagsOf(src: string, toks: Token[]): string {
   const out = Array.from({ length: src.length }).fill('.')
-  for (const t of classify(src, toks)) {
+  for (const t of classifyTokens(src, toks)) {
     const code = t.tag ? TAG_CODE[t.tag]! : '.'
     for (let i = t.start; i < t.end; i++) out[i] = code
   }
@@ -140,7 +140,7 @@ const ALPHA = [
 /** Lex each line as its OWN string (what the document does), not a slice of the whole. */
 function lexPerLine(src: string): Token[] {
   const out: Token[] = []
-  let state: readonly Frame[] = []
+  let state: readonly LexFrame[] = []
   let p = 0
   while (p < src.length || p === 0) {
     const nl = src.indexOf('\n', p)

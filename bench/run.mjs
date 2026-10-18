@@ -94,15 +94,15 @@ table(
     const doc = glowDocument(src)
     const at = Math.floor(src.length / 2)
     for (let i = 0; i < 100; i++) {
-      doc.update(at, at, 'x')
-      doc.update(at, at + 1, '')
+      doc.applyEdit(at, at, 'x')
+      doc.applyEdit(at, at + 1, '')
     }
     let patch = 0
     const ms = median(() => {
       patch = 0
       for (let i = 0; i < EDITS; i++) {
-        patch += doc.update(at, at, 'x').lines.length
-        doc.update(at, at + 1, '')
+        patch += doc.applyEdit(at, at, 'x').lines.length
+        doc.applyEdit(at, at + 1, '')
       }
     }, 5)
     const perEdit = ms / (EDITS * 2)

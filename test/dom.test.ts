@@ -69,7 +69,7 @@ describe('mountGlowLines (render half only)', () => {
     expect(el.querySelector('.glow-line')).not.toBeNull()
 
     // drive it the way another editor would: edit the document, apply the patch
-    const patch = lines.document.update(5, 5, 'x')
+    const patch = lines.document.applyEdit(5, 5, 'x')
     lines.apply(patch)
     expect(domText(el)).toBe('constx a = 1')
     expect(lines.document.value).toBe('constx a = 1')
@@ -80,7 +80,7 @@ describe('mountGlowLines (render half only)', () => {
     const el = makePre(src)
     const lines = mountGlowLines(el)
     const before = Array.from(el.children) as HTMLElement[]
-    lines.apply(lines.document.update(2, 2, 'X'))
+    lines.apply(lines.document.applyEdit(2, 2, 'X'))
     const after = Array.from(el.children) as HTMLElement[]
     expect(after[10]).toBe(before[10])
     expect(after[0]).not.toBe(before[0])
@@ -187,7 +187,7 @@ describe('mountGlowEditor', () => {
 
     const doc = lines.document
     const at = doc.value.indexOf('</Foo>')
-    const patch = doc.update(at, at + 6, '')
+    const patch = doc.applyEdit(at, at + 6, '')
     expect(patch.full).toBe(true) // the pairing flipped, so everything re-decides
     lines.apply(patch)
 

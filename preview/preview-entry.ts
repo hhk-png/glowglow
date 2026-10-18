@@ -6,4 +6,4 @@
 export { mountGlowEditor } from '../src/dom'
 export { glow, glowDocument, glowInner, glowSource } from '../src/index'
 // the lower-level pieces the demos reach for too
-export { foldMap } from '../src/fold'
+export { buildFoldMap } from '../src/fold'
