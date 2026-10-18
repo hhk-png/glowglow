@@ -58,11 +58,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Vitest 5 requires Node >= 22.12; Node 18/20 are covered by the
-        # runtime job below, which exercises the built package instead.
+        # Vitest 5 requires Node >= 22.12; Node 18 is covered by the runtime
+        # job below, which exercises the built package instead.
         node:
           - 22
           - 24
+          - 26
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -84,10 +85,10 @@ jobs:
       - name: Test
         run: pnpm test
 
-  # The dev toolchain cannot run on the oldest Node versions the package
+  # The dev toolchain cannot run on the oldest Node version the package
   # supports: pnpm 11 needs Node >= 22.13 and Vitest 5 needs Node >= 22.12.
   # This job checks the thing engines actually promises — the built package —
-  # on Node 18 and 20, without installing any development dependencies.
+  # on Node 18, without installing any development dependencies.
   runtime:
     name: Runtime (Node ${{ matrix.node }})
     needs: checks
@@ -97,7 +98,6 @@ jobs:
       matrix:
         node:
           - 18
-          - 20
     steps:
       - name: Checkout
         uses: actions/checkout@v5

@@ -1,6 +1,6 @@
-// Verifies the built package on Node versions the development toolchain cannot
-// run: pnpm 11 needs Node >= 22.13 and Vitest 5 needs Node >= 22.12. The full
-// suite runs on 22/24; this checks the engines claim (Node >= 18) against dist/
+// Verifies the built package on the oldest Node the toolchain cannot run:
+// pnpm 11 needs Node >= 22.13 and Vitest 5 needs Node >= 22.12. The full suite
+// runs on 22/24/26; this checks the engines floor (Node >= 18) against dist/
 // without installing any development dependencies.
 
 import assert from 'node:assert/strict'
