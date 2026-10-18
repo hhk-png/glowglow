@@ -9,6 +9,15 @@ Built with [tsdown](https://tsdown.dev) and type-checked with [TypeScript 6.x](h
 - 🪶 **Tiny** — the whole highlighter is a few KB, zero runtime dependencies.
 - 🧩 **ESM + CJS + TypeScript types**, works in Node ≥ 18 and the browser.
 
+## Documentation
+
+- [Tutorial](docs/tutorial.md) — build an editor step by step ([中文版](docs/tutorial.zh-CN.md))
+- [API reference](docs/api.md) — every export of the three entry points
+- [How incremental editing works](docs/incremental.md) — the document model and re-colouring pipeline
+- [The DOM layer](docs/dom.md) — line rendering, the editor, folds and marks
+- [Styling](docs/styling.md) — semantic tags, bundled CSS and variables
+- [Development](docs/development.md) — setup, tests, benchmarks, CI and release
+
 ## Install
 
 ```bash
@@ -76,7 +85,7 @@ import { glowDocument } from 'glowglow'
 const doc = glowDocument(code)
 
 // after replacing [from, to) with `insert`, ask what changed
-const patch = doc.update(from, to, insert)
+const patch = doc.applyEdit(from, to, insert)
 // patch = { startLine, removed, lines: string[], full: boolean }
 
 // patch.startLine in the new text replaces patch.removed old lines with
@@ -84,7 +93,7 @@ const patch = doc.update(from, to, insert)
 // line elements and everything else keeps its nodes, its caret and its undo.
 ```
 
-`doc.render()` returns the whole document again, `doc.line(i)` one line, and
+`doc.render()` returns the whole document again, `doc.lineHtml(i)` one line, and
 `doc.lineCount`/`doc.value` the obvious. A keystroke re-colours exactly one line,
 and costs about the same whatever the file: ~32 µs at 1,000 lines, ~45 µs at
 10,000 and ~64 µs at 20,000, against ~125 ms for a full `glow()` of the same
@@ -136,13 +145,13 @@ possible. The package ships in three pieces, and the split is meant to be used:
 | entry | what it is | needs DOM |
 |---|---|---|
 | `glowglow` | `glow()` for static markup, `glowDocument()` for editing | no |
-| `glowglow/incremental` | the lexer, classifier and renderer the document is built from, plus `foldMap()` — for a token-level renderer, a minimap, semantic search, a folded outline | no |
+| `glowglow/incremental` | the lexer, classifier and renderer the document is built from, plus `buildFoldMap()` — for a token-level renderer, a minimap, semantic search, a folded outline | no |
 | `glowglow/dom` | `mountGlowLines()` renders and patches lines; `mountGlowEditor()` adds the input handling on top | yes |
 
 The contract between the engine and any editor is one call:
 
 ```ts
-const patch = doc.update(from, to, insert)
+const patch = doc.applyEdit(from, to, insert)
 // { startLine, removed, lines: string[], full }
 ```
 
@@ -160,16 +169,16 @@ Two things to design around:
 #### Folding
 
 Hiding lines is a view concern, so the engine only supplies the projection —
-`foldMap(folds, lineCount)` maps document lines to visible rows (and back). What
-folds is yours to decide, whether that is a brace matcher, an outline or a
+`buildFoldMap(folds, lineCount)` maps document lines to visible rows (and back).
+What folds is yours to decide, whether that is a brace matcher, an outline or a
 language server; the document itself never changes.
 
 ```ts
-const map = foldMap([{ from: 12, to: 30 }], doc.lineCount)
+const map = buildFoldMap([{ from: 12, to: 30 }], doc.lineCount)
 map.visibleCount // 18 fewer rows
-map.lineAt(row) // the line to draw at a row
-map.hiddenAt(row) // how many lines the marker at this row stands for
-map.rowOf(line) // -1 when a fold hides it
+map.lineIndexAt(row) // the line to draw at a row
+map.hiddenCountAt(row) // how many lines the marker at this row stands for
+map.rowIndexAt(line) // -1 when a fold hides it
 ```
 
 That pairs with rendering only a window of rows, which is how the 100,000-line
@@ -200,7 +209,7 @@ for the lines whose markup changed, the same shape an edit returns:
 const hits = findMatches(text) // [{ from, to, cls: 'hit' }, …]
 view.apply(doc.setMarks(hits)) // or editor.setMarks(hits)
 
-doc.line(i)
+doc.lineHtml(i)
 // '…<strong><mark class="hit">const</mark></strong> …'
 ```
 
@@ -218,7 +227,7 @@ import { mountGlowLines } from 'glowglow/dom'
 
 const view = mountGlowLines(el, { numbered: true })
 // [your input layer]
-view.apply(view.document.update(from, to, insert))
+view.apply(view.document.applyEdit(from, to, insert))
 ```
 
 Because `mountGlowEditor` hands you its `document`, a sidecar like a minimap or
@@ -237,7 +246,7 @@ import { commonEdit, mountGlowLines } from 'glowglow/dom'
 const view = mountGlowLines(pre)
 textarea.addEventListener('input', () => {
   const { from, to, insert } = commonEdit(view.document.value, textarea.value)
-  view.apply(view.document.update(from, to, insert))
+  view.apply(view.document.applyEdit(from, to, insert))
   pre.scrollTop = textarea.scrollTop
 })
 ```
