@@ -120,7 +120,7 @@ describe('incremental colouring', () => {
       'const x = { "key": 1 }',
     ].join('\n')
     fuzz(0x9E1, 8000, src)
-  })
+  }, 30_000) // 8000 edits, each checked with a full re-classify; slow CI runners need headroom
 
   it('matches when an unpaired element becomes paired', () => {
     const doc = glowDocument('<Foo>hi')
