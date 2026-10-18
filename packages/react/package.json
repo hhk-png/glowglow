@@ -1,0 +1,66 @@
+{
+  "name": "@glowglow/react",
+  "type": "module",
+  "version": "0.2.0",
+  "description": "React components for glowglow syntax highlighting and live editing",
+  "license": "MIT",
+  "homepage": "https://github.com/hhk-png/glowglow",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:hhk-png/glowglow.git",
+    "directory": "packages/react"
+  },
+  "bugs": {
+    "url": "https://github.com/hhk-png/glowglow/issues"
+  },
+  "keywords": [
+    "syntax-highlighting",
+    "syntax-highlighter",
+    "react",
+    "editor",
+    "glowglow"
+  ],
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "LICENSE",
+    "README.md",
+    "dist"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "prepublishOnly": "pnpm build"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "dependencies": {
+    "glowglow": "workspace:^"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tsdown": "^0.23.0",
+    "typescript": "^6.0.3"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

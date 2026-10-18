@@ -8,7 +8,7 @@ pieces apart to show how to build your own input layer and a virtualised viewer
 for very large files.
 
 Everything here uses public API only. The finished pieces are also available as
-working demos in [`preview/`](../preview/).
+working demos in [`preview/`](../packages/glowglow/preview/).
 
 ## What you need
 
@@ -318,7 +318,7 @@ Notes:
   visible row, `lineIndexAt(row)` is the document line it shows.
 
 For a minimap with a viewport box and click-to-scroll, see
-[`preview/minimap.html`](../preview/minimap.html).
+[`preview/minimap.html`](../packages/glowglow/preview/minimap.html).
 
 ## Step 5 — build your own input layer
 
@@ -453,7 +453,7 @@ drawVirtual(0, scroller.clientHeight)
 `visibleCount` is the number of rows to draw, not the number of document lines.
 Folded lines never reach the DOM, and `lineIndexAt(row)` gives the line to draw.
 
-`preview/virtual.html` uses this technique with 100,000 lines.
+`packages/glowglow/preview/virtual.html` uses this technique with 100,000 lines.
 
 ## Rules of thumb
 
@@ -489,6 +489,6 @@ These are the things that break integrations most often.
   window, and when it falls back to a full rebuild
 - [The DOM layer](dom.md) — mount options, folds, marks and sidecars in more
   detail
-- [`preview/editor.html`](../preview/editor.html) — the editor plus a search box
-- [`preview/minimap.html`](../preview/minimap.html) — a minimap and viewport
-- [`preview/virtual.html`](../preview/virtual.html) — 100,000 lines, folded
+- [`preview/editor.html`](../packages/glowglow/preview/editor.html) — the editor plus a search box
+- [`preview/minimap.html`](../packages/glowglow/preview/minimap.html) — a minimap and viewport
+- [`preview/virtual.html`](../packages/glowglow/preview/virtual.html) — 100,000 lines, folded

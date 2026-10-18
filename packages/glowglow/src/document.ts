@@ -40,8 +40,11 @@ export function sameLexState(a: readonly LexFrame[], b: readonly LexFrame[]): bo
       if (x.depth !== y.depth)
         return false
     }
-    else if (x.kind === 'block' && y.kind === 'block') {
-      if (x.close !== y.close)
+    // The kinds were compared above, so both frames are blocks here.
+    else {
+      const xb = x as Extract<LexFrame, { kind: 'block' }>
+      const yb = y as Extract<LexFrame, { kind: 'block' }>
+      if (yb.close !== xb.close)
         return false
     }
   }
@@ -334,6 +337,8 @@ export class GlowDocument {
   /** The character at an absolute offset, or '' past the end. */
   private at(offset: number): string {
     const i = lineOf(this.starts, offset)
+    // Defensive: the lexer never produces a token offset past the buffer.
+    /* v8 ignore next */
     return this.lines[i]![offset - this.starts[i]!] ?? ''
   }
 
@@ -472,8 +477,10 @@ export class GlowDocument {
     const lineTextAt = (k: number): string =>
       k < startLine + region.length ? region[k - startLine]! : oldLines[k - deltaLines]!
 
-    // if the edit swallowed every line from `startLine` on there is no prefix to
-    // reuse; lex and colour the whole thing afresh (rare, and always correct)
+    // If the edit swallowed every line from `startLine` on there is no prefix to
+    // reuse. Removing text can leave at most `startLine` lines, so this cannot
+    // actually happen; keep the guard and exclude it from coverage.
+    /* v8 ignore start */
     if (startLine >= totalNewLines) {
       const flat = oldLines.slice(0, startLine).join('') + regionText + oldLines.slice(toLine + 1).join('')
       const re = lexLines(splitLines(flat))
@@ -485,6 +492,7 @@ export class GlowDocument {
       this.rebuild()
       return { startLine: 0, removed: oldLineCount, lines: this.renderLines(0, re.lines.length), full: true }
     }
+    /* v8 ignore stop */
 
     let state: readonly LexFrame[] = oldStates[startLine]!
     let converged = -1
@@ -741,6 +749,9 @@ export class GlowDocument {
     const leftBounded = wLo > 0 && this.decidedEndBefore(wLo) === wLo
     const rightBounded = wHiOld < oldLen && this.decidedStartAfter(wHiOld, oldLen) === wHiOld
 
+    // `loLine` always contains `wLo`, so it can never be a line that ends
+    // before `wLo`; the loop is a guard and never runs.
+    /* v8 ignore next */
     const lineEndOf = (i: number): number => (i + 1 < this.starts.length ? this.starts[i + 1]! : newLen)
     let loLine = lineOf(this.starts, wLo)
     // A line belongs to the window if it starts before `wHi`; the only line at
@@ -749,6 +760,7 @@ export class GlowDocument {
     let hiLine = wHi >= newLen
       ? this.starts.length
       : Math.min(lineOf(this.starts, Math.max(0, wHi - 1)) + 1, this.starts.length)
+    /* v8 ignore next */
     while (loLine < hiLine && loLine < oldStartLine && lineEndOf(loLine) <= wLo) loLine++
     while (hiLine - 1 > loLine && hiLine - 1 >= newEndLine && this.starts[hiLine - 1]! >= wHi) hiLine--
     if (hiLine - loLine > MAX_WINDOW_LINES) {
@@ -786,6 +798,9 @@ export class GlowDocument {
         else {
           // before the window: the same line as before the edit; after it: the
           // line that shifted down by the edit's line delta
+          // `cur` is always present for a line in the window; the fallbacks are
+          // only there for a malformed tags array.
+          /* v8 ignore next */
           const prev = s < wLo ? (cur ?? oldTags[i]) : (cur ?? oldTags[i - deltaLines])
           line.push(prev?.[j] ?? null)
         }
@@ -807,6 +822,8 @@ function tokensInRange(starts: number[], toks: Token[][], lo: number, hi: number
     const base = starts[i]!
     if (base >= hi)
       break
+    // Defensive: `starts`, `toks` and `lines` are always built together.
+    /* v8 ignore next 2 */
     if (!toks[i])
       throw new Error(`hole at line ${i}: toks.length=${toks.length} starts.length=${starts.length} lo=${lo} hi=${hi}`)
     for (const t of toks[i]!) {

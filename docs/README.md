@@ -14,6 +14,8 @@ the deep dives.
 |---|---|
 | [Tutorial](tutorial.md) | Build an editor step by step — [中文版](tutorial.zh-CN.md) |
 | [API reference](api.md) | Every export of `glowglow`, `glowglow/incremental` and `glowglow/dom` |
+| [React](react.md) | `<Glow>` and `<GlowEditor>` from `@glowglow/react` |
+| [Vue](vue.md) | `<Glow>` and `<GlowEditor>` from `@glowglow/vue` |
 | [Incremental editing](incremental.md) | How `GlowDocument` re-lexes and re-colours only what an edit touched |
 | [The DOM layer](dom.md) | `mountGlowLines`, `mountGlowEditor`, folds, marks and virtualised lists |
 | [Styling](styling.md) | The tag vocabulary, bundled stylesheets and CSS variables |
@@ -26,6 +28,8 @@ the deep dives.
 | `glowglow` | anywhere | One-shot rendering (`glow`, `glowInner`, `glowSource`) and `glowDocument()` |
 | `glowglow/incremental` | anywhere, DOM-free | Building a token-level renderer, a minimap, semantic search, or a different editor |
 | `glowglow/dom` | browser | Ready-made line rendering and a contenteditable editor |
+| `@glowglow/react` | React ≥ 18 | `<Glow>` and `<GlowEditor>` components |
+| `@glowglow/vue` | Vue ≥ 3.3 | `<Glow>` and `<GlowEditor>` components |
 
 ## At a glance
 

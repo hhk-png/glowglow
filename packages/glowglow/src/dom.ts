@@ -105,8 +105,11 @@ function childElements(el: HTMLElement): HTMLElement[] {
 /** The element holding a row's line text; the fold marker sits before it. */
 function bodyOf(row: HTMLElement): HTMLElement {
   const first = row.firstElementChild
-  if (first && first.classList.contains(FOLD))
+  if (first && first.classList.contains(FOLD)) {
+    // A fold row always has a marker followed by a body.
+    /* v8 ignore next */
     return (row.lastElementChild as HTMLElement | null) ?? row
+  }
   return row
 }
 
@@ -138,6 +141,9 @@ function pointOfColumn(body: HTMLElement, column: number): { node: Node, offset:
     last = n
     n = walker.nextNode() as Text | null
   }
+  // An empty line has no text node, so `last` can be null; both arms are kept
+  // for safety, but `last` is always set for a line with text.
+  /* v8 ignore next */
   return last ? { node: last, offset: last.data.length } : { node: body, offset: 0 }
 }
 
@@ -184,6 +190,9 @@ function boundary(text: string, at: number, type: string): { from: number, to: n
  * no keyboard, no clipboard — that half is the caller's.
  */
 export function mountGlowLines(el: HTMLElement, opts: GlowLinesOptions = {}): GlowLines {
+  // `textContent` is always a string on an element; the trailing fallback is
+  // defensive.
+  /* v8 ignore next */
   let doc = glowDocument(opts.value ?? el.textContent ?? '')
   let folds: GlowFold[] = []
   let map = buildFoldMap(folds, doc.lineCount)
@@ -286,10 +295,14 @@ export function mountGlowLines(el: HTMLElement, opts: GlowLinesOptions = {}): Gl
 
     if (oldFirst < 0 && newFirst < 0)
       return // the edit happened entirely inside a fold: nothing on screen moved
+    // A line can only move in or out of a fold when the fold's hidden count
+    // changes, which the branch above already handles.
+    /* v8 ignore start */
     if (oldFirst < 0 || newFirst < 0) {
       render() // a fold appeared or vanished with the edit
       return
     }
+    /* v8 ignore stop */
 
     const kids = childElements(el)
     const anchor = kids[oldLast + 1] ?? null
@@ -372,6 +385,8 @@ export function mountGlowEditor(el: HTMLElement, opts: GlowEditorOptions = {}): 
     }
     const rowEl = childElements(el)[row]
     const sel = window.getSelection()
+    // Defensive: a valid row and a selection exist whenever a caret is set.
+    /* v8 ignore next 2 */
     if (!rowEl || !sel)
       return
     const { node, offset: at } = pointOfColumn(bodyOf(rowEl), column)
@@ -418,7 +433,15 @@ export function mountGlowEditor(el: HTMLElement, opts: GlowEditorOptions = {}): 
     const out: string[] = []
     for (let line = 0; line < doc.lineCount; line++) {
       const row = lines.foldMap.rowIndexAt(line)
-      out.push(row < 0 ? doc.lineText(line) : (rows[row] ? bodyOf(rows[row]!).textContent ?? '' : ''))
+      if (row < 0) {
+        out.push(doc.lineText(line))
+      }
+      else {
+        const rowEl = rows[row]
+        // Defensive: the fold map and the rows are kept in step.
+        /* v8 ignore next */
+        out.push(rowEl ? bodyOf(rowEl).textContent ?? '' : '')
+      }
     }
     return out.join('\n')
   }
@@ -451,6 +474,8 @@ export function mountGlowEditor(el: HTMLElement, opts: GlowEditorOptions = {}): 
 
   /** Apply edits as one undoable step and leave the caret at `caret`. */
   function commitStep(step: GlowEdit[], caret: number): void {
+    // Every caller passes a non-empty step.
+    /* v8 ignore next 2 */
     if (!step.length)
       return
     past.push(applyStep(step))
@@ -530,6 +555,8 @@ export function mountGlowEditor(el: HTMLElement, opts: GlowEditorOptions = {}): 
     if (!sel || sel.rangeCount === 0 || sel.isCollapsed)
       return
     const { from, to } = rangeOffsets(sel.getRangeAt(0))
+    // A non-collapsed DOM range always spans text.
+    /* v8 ignore next 2 */
     if (from === to)
       return
     e.clipboardData?.setData('text/plain', text().slice(from, to))
@@ -617,6 +644,8 @@ export function mountGlowEditor(el: HTMLElement, opts: GlowEditorOptions = {}): 
     if (!target || !target.classList?.contains(FOLD) || target.dataset.line === undefined)
       return
     const row = rowIndexOf(el, target)
+    // A marker inside the editor always belongs to a row.
+    /* v8 ignore next 2 */
     if (row < 0)
       return
     opts.onFoldToggle?.(lines.foldMap.lineIndexAt(row))

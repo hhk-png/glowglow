@@ -41,6 +41,9 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      - name: Coverage
+        run: pnpm coverage
+
       - name: Build
         run: pnpm build
 
@@ -48,7 +51,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: dist
-          path: dist/
+          path: packages/glowglow/dist/
           if-no-files-found: error
           retention-days: 1
 
@@ -111,10 +114,10 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: dist
-          path: dist
+          path: packages/glowglow/dist
 
       - name: Run runtime smoke test
-        run: node test/runtime-smoke.mjs
+        run: node packages/glowglow/test/runtime-smoke.mjs
 
   browser:
     name: Browser check

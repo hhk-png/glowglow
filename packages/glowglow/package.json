@@ -1,0 +1,75 @@
+{
+  "name": "glowglow",
+  "type": "module",
+  "version": "0.2.0",
+  "description": "CSS-first, language-agnostic syntax highlighting for the web. A maintained TypeScript fork of nue-glow.",
+  "license": "MIT",
+  "homepage": "https://github.com/hhk-png/glowglow",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:hhk-png/glowglow.git",
+    "directory": "packages/glowglow"
+  },
+  "bugs": {
+    "url": "https://github.com/hhk-png/glowglow/issues"
+  },
+  "keywords": [
+    "syntax-highlighting",
+    "syntax-highlighter",
+    "highlight",
+    "code",
+    "markdown",
+    "css",
+    "nue",
+    "glow"
+  ],
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./incremental": {
+      "types": "./dist/incremental.d.ts",
+      "import": "./dist/incremental.js",
+      "require": "./dist/incremental.cjs"
+    },
+    "./dom": {
+      "types": "./dist/dom.d.ts",
+      "import": "./dist/dom.js",
+      "require": "./dist/dom.cjs"
+    },
+    "./css/*": "./css/*",
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "css",
+    "dist"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.dom.json",
+    "bench": "pnpm build && node bench/run.mjs",
+    "test:browser": "pnpm build && node test/browser-check.mjs",
+    "preview:generate": "node preview/generate.mjs",
+    "prepublishOnly": "pnpm build"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsdown": "^0.23.0",
+    "typescript": "^6.0.3"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

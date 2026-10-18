@@ -7,7 +7,7 @@
 为超大文件做虚拟化渲染。
 
 全部代码只使用公开 API。最终成品也以可运行 demo 的形式放在
-[`preview/`](../preview/) 中。
+[`preview/`](../packages/glowglow/preview/) 中。
 
 ## 你需要什么
 
@@ -310,7 +310,7 @@ draw(editor.document, editor.folds)
   `lineIndexAt(row)` 是它对应的文档行。
 
 想要带视口框和点击跳转的小地图，见
-[`preview/minimap.html`](../preview/minimap.html)。
+[`preview/minimap.html`](../packages/glowglow/preview/minimap.html)。
 
 ## 第五步 — 构建自己的输入层
 
@@ -442,7 +442,7 @@ drawVirtual(0, scroller.clientHeight)
 `visibleCount` 是要画的 row 数，不是文档行数。被折叠的行根本不会进入 DOM，
 `lineIndexAt(row)` 给出该 row 应该画哪一行。
 
-`preview/virtual.html` 就是用这个办法处理 100,000 行文件的。
+`packages/glowglow/preview/virtual.html` 就是用这个办法处理 100,000 行文件的。
 
 ## 经验规则
 
@@ -472,6 +472,6 @@ drawVirtual(0, scroller.clientHeight)
 - [API 参考](api.md) — 每个导出的精确签名
 - [增量编辑原理](incremental.md) — 为什么只重着色一个窗口，以及何时退回全量重建
 - [DOM 层](dom.md) — 挂载选项、折叠、marks 和 sidecar 的更多细节
-- [`preview/editor.html`](../preview/editor.html) — 带搜索框的编辑器
-- [`preview/minimap.html`](../preview/minimap.html) — 小地图和视口
-- [`preview/virtual.html`](../preview/virtual.html) — 100,000 行、可折叠
+- [`preview/editor.html`](../packages/glowglow/preview/editor.html) — 带搜索框的编辑器
+- [`preview/minimap.html`](../packages/glowglow/preview/minimap.html) — 小地图和视口
+- [`preview/virtual.html`](../packages/glowglow/preview/virtual.html) — 100,000 行、可折叠

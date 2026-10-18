@@ -25,6 +25,13 @@ function html(src: string): string {
   return out
 }
 
+describe('classifyTokens — offset edge cases', () => {
+  it('reads an out-of-range character as empty', () => {
+    const tagged = classifyTokens('abc', [{ kind: 'word', start: 5, end: 6 }])
+    expect(tagged[0]!.tag).toBe('b')
+  })
+})
+
 describe('classifyTokens — semantic colour tags', () => {
   it('keywords -> strong, other identifiers -> b', () => {
     expect(html('const x = payload')).toContain('<strong>const</strong>')

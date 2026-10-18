@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { lex, tokenText } from '../src/lexer'
+import { lex, lexSegment, tokenText } from '../src/lexer'
 
 function kinds(src: string): string {
   return lex(src)
@@ -11,6 +11,14 @@ function shape(src: string): string {
     .map(t => `${t.kind}:${JSON.stringify(tokenText(src, t))}`)
     .join(' ')
 }
+
+describe('unfinished block comments', () => {
+  it('emits the comment up to the end of a non-final segment', () => {
+    const run = lexSegment('/* comment', 0, 10, [], false)
+    expect(run.tokens.some(t => t.kind === 'comment')).toBe(true)
+    expect(run.state).toHaveLength(1)
+  })
+})
 
 describe('lex — kinds & boundaries', () => {
   it('tokens fully cover the input without overlap', () => {

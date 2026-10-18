@@ -14,7 +14,8 @@
     "erasableSyntaxOnly": true,
     "skipLibCheck": true
   },
-  "include": ["src", "test", "tsdown.config.ts"],
-  // the DOM adapter is checked separately, with the DOM lib (see tsconfig.dom.json)
-  "exclude": ["src/dom.ts", "test/dom.test.ts"]
+  // Shared compiler options for the workspace. Each package has its own
+  // tsconfig.json with its own include/exclude and, where needed, DOM libs.
+  "include": ["vitest.config.ts", "bump.config.ts"],
+  "exclude": []
 }

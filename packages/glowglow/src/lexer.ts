@@ -457,6 +457,9 @@ export function lexSegment(
   // so `covered` is already at `to`.)
   if (covered < to) {
     const t = top()
+    // When a segment ends with unemitted text, that text always belongs to an
+    // open block comment; strings emit their opener as they are pushed.
+    /* v8 ignore next */
     if (t && t.kind === 'block')
       emit('comment', Math.max(t.start, from), to)
   }

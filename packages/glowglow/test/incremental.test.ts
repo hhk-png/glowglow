@@ -2,6 +2,7 @@
 // glowDocument() is built from, for callers who want to assemble them their own
 // way. This pins that they are all actually reachable and compose.
 
+import type { LexFrame } from '../src/lexer'
 import { describe, expect, it } from 'vitest'
 import {
   classifyTokens,
@@ -22,6 +23,14 @@ import {
 describe('glowglow/incremental', () => {
   const src = 'const a = <b>1</b>'
   const toks = lex(src)
+
+  it('compares block frames by their closing sequence', () => {
+    const a: LexFrame[] = [{ kind: 'block', close: '*/', start: 0 }]
+    const b: LexFrame[] = [{ kind: 'block', close: '-->', start: 0 }]
+    expect(sameLexState(a, a)).toBe(true)
+    expect(sameLexState(a, b)).toBe(false)
+    expect(sameLexState(a, [])).toBe(false)
+  })
 
   it('lexes, and resumes a segment from a carried state', () => {
     expect(toks.map(t => tokenText(src, t)).join('')).toBe(src)

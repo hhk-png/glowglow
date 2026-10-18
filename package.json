@@ -1,8 +1,8 @@
 {
-  "name": "glowglow",
+  "name": "glowglow-workspace",
   "type": "module",
-  "version": "0.2.0",
-  "description": "CSS-first, language-agnostic syntax highlighting for the web. A maintained TypeScript fork of nue-glow.",
+  "version": "0.0.0",
+  "private": true,
   "license": "MIT",
   "homepage": "https://github.com/hhk-png/glowglow",
   "repository": {
@@ -12,59 +12,21 @@
   "bugs": {
     "url": "https://github.com/hhk-png/glowglow/issues"
   },
-  "keywords": [
-    "syntax-highlighting",
-    "syntax-highlighter",
-    "highlight",
-    "code",
-    "markdown",
-    "css",
-    "nue",
-    "glow"
-  ],
-  "sideEffects": [
-    "**/*.css"
-  ],
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
-    },
-    "./incremental": {
-      "types": "./dist/incremental.d.ts",
-      "import": "./dist/incremental.js",
-      "require": "./dist/incremental.cjs"
-    },
-    "./dom": {
-      "types": "./dist/dom.d.ts",
-      "import": "./dist/dom.js",
-      "require": "./dist/dom.cjs"
-    },
-    "./css/*": "./css/*",
-    "./package.json": "./package.json"
-  },
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "files": [
-    "css",
-    "dist"
-  ],
   "engines": {
-    "node": ">=18"
+    "node": ">=22.13"
   },
   "scripts": {
-    "build": "tsdown",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.dom.json",
+    "build": "pnpm --filter glowglow run build && pnpm --filter @glowglow/react --filter @glowglow/vue run build",
+    "build:core": "pnpm --filter glowglow run build",
+    "typecheck": "tsc --noEmit -p tsconfig.json && pnpm build:core && pnpm --filter glowglow run typecheck && pnpm --filter @glowglow/react --filter @glowglow/vue run typecheck",
     "lint": "eslint . --cache",
     "fix": "eslint . --fix",
     "test": "vitest run",
-    "test:browser": "pnpm build && node test/browser-check.mjs",
     "coverage": "vitest run --coverage",
-    "bench": "pnpm build && node bench/run.mjs",
+    "test:browser": "pnpm --filter glowglow run test:browser",
+    "bench": "pnpm --filter glowglow run bench",
+    "preview:generate": "pnpm --filter glowglow run preview:generate",
     "release": "bumpp --push",
-    "prepublishOnly": "pnpm build",
     "prepare": "simple-git-hooks"
   },
   "devDependencies": {
@@ -76,7 +38,6 @@
     "happy-dom": "^20.14.5",
     "lint-staged": "^17.5.1",
     "simple-git-hooks": "^2.14.0",
-    "tsdown": "^0.23.0",
     "typescript": "^6.0.3",
     "vitest": "^5.0.0"
   },
@@ -84,10 +45,6 @@
     "pre-commit": "pnpm lint-staged"
   },
   "lint-staged": {
-    "*": "eslint . --fix --cache"
-  },
-  "publishConfig": {
-    "access": "public",
-    "registry": "https://registry.npmjs.org/"
+    "*": "eslint --fix --cache"
   }
 }

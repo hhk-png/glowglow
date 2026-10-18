@@ -8,6 +8,9 @@ the CSS assets. Anything not listed here is internal.
 - [`glowglow/dom`](#glowglowdom) — browser adapters
 - [CSS assets](#css-assets)
 
+The framework packages are documented separately: [React](react.md) and
+[Vue](vue.md).
+
 ## `glowglow`
 
 ```ts

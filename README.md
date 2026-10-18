@@ -8,11 +8,14 @@ Built with [tsdown](https://tsdown.dev) and type-checked with [TypeScript 6.x](h
 - 🧱 **Semantic HTML** — keywords `<strong>`, identifiers `<b>`, strings/numbers `<em>`, comments `<sup>`, decorators `<label>`, operators/brackets `<i>`. Style with plain CSS or a handful of CSS variables.
 - 🪶 **Tiny** — the whole highlighter is a few KB, zero runtime dependencies.
 - 🧩 **ESM + CJS + TypeScript types**, works in Node ≥ 18 and the browser.
+- ⚛️ **React and Vue components** — `@glowglow/react` and `@glowglow/vue` ship `<Glow>` and `<GlowEditor>`.
 
 ## Documentation
 
 - [Tutorial](docs/tutorial.md) — build an editor step by step ([中文版](docs/tutorial.zh-CN.md))
 - [API reference](docs/api.md) — every export of the three entry points
+- [React components](docs/react.md) — `<Glow>` and `<GlowEditor>` from `@glowglow/react`
+- [Vue components](docs/vue.md) — `<Glow>` and `<GlowEditor>` from `@glowglow/vue`
 - [How incremental editing works](docs/incremental.md) — the document model and re-colouring pipeline
 - [The DOM layer](docs/dom.md) — line rendering, the editor, folds and marks
 - [Styling](docs/styling.md) — semantic tags, bundled CSS and variables
@@ -137,6 +140,48 @@ Shift+Tab** to indent or outdent the selected lines (**Esc** releases the editor
 so Tab never traps the keyboard). Composition itself is left to the browser, and
 the document resyncs when it ends.
 
+### React and Vue
+
+Both framework adapters expose a static `<Glow>` and a live `<GlowEditor>`:
+
+```tsx
+import { Glow, GlowEditor } from '@glowglow/react'
+import 'glowglow/css/editor.css'
+import 'glowglow/css/syntax.css'
+
+export function Example({ source, save }: { source: string, save: (value: string) => void }) {
+  return (
+    <>
+      <Glow code={source} language="ts" numbered />
+      <GlowEditor value={source} numbered onChange={save} />
+    </>
+  )
+}
+```
+
+```vue
+<script setup lang="ts">
+import { Glow, GlowEditor } from '@glowglow/vue'
+import 'glowglow/css/editor.css'
+import 'glowglow/css/syntax.css'
+</script>
+
+<template>
+  <Glow :code="source" language="ts" numbered />
+  <GlowEditor :value="source" numbered @change="save" />
+</template>
+```
+
+Install the adapter with the framework and `glowglow` itself (for the CSS):
+
+```bash
+pnpm add @glowglow/react react glowglow
+pnpm add @glowglow/vue vue glowglow
+```
+
+See [React](docs/react.md) and [Vue](docs/vue.md) for props, events, refs,
+SSR notes and fold/mark wiring.
+
 ### Building your own editor
 
 `mountGlowEditor` is *one* editor built on the document, not the only one
@@ -182,7 +227,7 @@ map.rowIndexAt(line) // -1 when a fold hides it
 ```
 
 That pairs with rendering only a window of rows, which is how the 100,000-line
-demo stays instant: `preview/virtual.html` collapses blocks, keeps ~30 rows in
+demo stays instant: `packages/glowglow/preview/virtual.html` collapses blocks, keeps ~30 rows in
 the DOM, and never asks the document for a folded-away line.
 
 The editor folds too:
@@ -196,7 +241,7 @@ A folded line leaves the DOM entirely, so the caret cannot reach it — ask for 
 inside a hidden range and it parks on the fold's own row instead. Edits still
 patch only the rows they touched, folds move with the text across edits the way
 marks do, and a click on a collapsed marker calls back through `onFoldToggle` so
-the caller decides what the click means. `preview/editor.html` folds its blocks
+the caller decides what the click means. `packages/glowglow/preview/editor.html` folds its blocks
 with a brace matcher written in the page.
 
 #### Your own markup in the output
@@ -232,7 +277,7 @@ view.apply(view.document.applyEdit(from, to, insert))
 
 Because `mountGlowEditor` hands you its `document`, a sidecar like a minimap or
 an outline is just a loop over `lineCount` / `lineTokens(i)` / `lineTags(i)` —
-no reaching into internals, and no parsing the rendered HTML. `preview/minimap.html`
+no reaching into internals, and no parsing the rendered HTML. `packages/glowglow/preview/minimap.html`
 is a working one (a canvas strip, redrawn on `onChange`, with the scroll position
 mirrored back onto it).
 
@@ -324,23 +369,24 @@ numbered.
 
 ```bash
 pnpm install
-pnpm typecheck   # tsc --noEmit
-pnpm test        # vitest
-pnpm coverage    # vitest + v8 coverage (100% on every metric)
+pnpm typecheck   # core, DOM and both framework adapters
+pnpm test        # vitest (core + adapters)
+pnpm coverage    # vitest + v8 coverage (core src held at 100%)
 pnpm lint        # eslint (antfu config)
-pnpm bench       # build, then time glow() and one glowDocument() keystroke
-pnpm build       # tsdown → dist/ (ESM, CJS, .d.ts)
+pnpm bench       # build core, then time glow() and one glowDocument() keystroke
+pnpm build       # core + adapter dist/ (ESM, CJS, .d.ts) and the preview bundle
 
-node preview/generate.mjs  # regenerate preview/preview.html from preview/samples/
+pnpm preview:generate  # regenerate packages/glowglow/preview/preview.html
 
-# the live editor demo: `pnpm build` also emits preview/glowglow.preview.js,
-# a self-contained classic script, so the pages work straight from file://
-pnpm build && open preview/editor.html    # the editor, with a search box that
-                                          # highlights hits via setMarks
-open preview/minimap.html                 # an editor plus a minimap drawn from
-                                          # the public document API
-open preview/virtual.html                 # 100,000 lines, folded blocks, only the
-                                          # visible rows in the DOM
+# the live editor demo: `pnpm build` also emits
+# packages/glowglow/preview/glowglow.preview.js, a self-contained classic script,
+# so the pages work straight from file://
+pnpm build && open packages/glowglow/preview/editor.html    # the editor, with a
+                                          # search box that highlights hits via setMarks
+open packages/glowglow/preview/minimap.html   # an editor plus a minimap drawn from
+                                              # the public document API
+open packages/glowglow/preview/virtual.html   # 100,000 lines, folded blocks, only
+                                              # the visible rows in the DOM
 
 # drive the built editor in a real browser over the DevTools Protocol: real
 # insertText / Backspace / Enter, caret and node-identity assertions

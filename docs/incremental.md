@@ -159,7 +159,7 @@ with `\n`.
   literal `</T>` will treat `T` as a paired markup name. There is no language
   hint to disambiguate, by design.
 - **Cost tracks the edit, not the file.** A keystroke re-lexes and re-colours
-  the lines it can reach. The benchmark ladder in `bench/run.mjs` asserts that
+  the lines it can reach. The benchmark ladder in `packages/glowglow/bench/run.mjs` asserts that
   per-line cost stays roughly flat from 100 to 20,000 lines.
 
 ## Driving the engine without the DOM

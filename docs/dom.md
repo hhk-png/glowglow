@@ -149,7 +149,7 @@ for (let row = 0; row < map.visibleCount; row++)
   draw(map.lineIndexAt(row), map.hiddenCountAt(row))
 ```
 
-`preview/virtual.html` renders 100,000 lines this way, keeping only about
+`packages/glowglow/preview/virtual.html` renders 100,000 lines this way, keeping only about
 thirty rows in the DOM.
 
 ## Marks
@@ -180,6 +180,6 @@ search results and language-server ranges can be passed through unchanged.
 over `lineCount` / `lineTokens(i)` / `lineTags(i)`. No internals and no parsing
 of the rendered HTML are required.
 
-`preview/minimap.html` and `preview/editor.html` are working examples. The
+`packages/glowglow/preview/minimap.html` and `packages/glowglow/preview/editor.html` are working examples. The
 `pnpm test:browser` script drives the built editor in a real browser over the
 DevTools Protocol, checking caret movement, node identity and real input events.
