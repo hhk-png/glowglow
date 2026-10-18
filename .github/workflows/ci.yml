@@ -50,8 +50,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # pnpm 11 requires Node >= 22.13
         node:
-          - 20
           - 22
           - 24
     steps:

@@ -2,9 +2,10 @@
 
 ## Requirements
 
-- Node.js ≥ 18 (CI and release run on 24; the browser check needs Node ≥ 22 for
-  its built-in `WebSocket`)
+- Node.js ≥ 22.13 for development. (The published package itself runs on Node
+  ≥ 18; pnpm 11 is what requires ≥ 22.13.)
 - pnpm 11
+- the browser check needs Node ≥ 22 for its built-in `WebSocket`
 
 ## Setup
 
@@ -114,7 +115,7 @@ script, because browsers refuse to load ES modules over `file://`.
 `.github/workflows/ci.yml` runs on every push to `main` and every pull request:
 
 - **checks** — lint, both typechecks, and a production build on Node 24;
-- **test** — the Vitest suite on Node 20, 22 and 24;
+- **test** — the Vitest suite on Node 22 and 24;
 - **browser** — the real-browser editor check on Node 24 with Chrome.
 
 All jobs install with `pnpm install --frozen-lockfile`, so a lockfile out of

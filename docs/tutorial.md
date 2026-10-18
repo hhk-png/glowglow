@@ -12,7 +12,8 @@ working demos in [`preview/`](../preview/).
 
 ## What you need
 
-- Node.js ≥ 18 and a package manager
+- Node.js ≥ 22.13 and pnpm (the repository's toolchain; the published package
+  itself still runs on Node ≥ 18)
 - a bundler that understands TypeScript and CSS imports (Vite is used below)
 - about 15 minutes for the main editor
 

@@ -11,7 +11,7 @@
 
 ## 你需要什么
 
-- Node.js ≥ 18 和包管理器
+- Node.js ≥ 22.13 和 pnpm（这是本仓库的工具链；发布出去的包本身仍支持 Node ≥ 18）
 - 能处理 TypeScript 与 CSS import 的打包器（下面用 Vite）
 - 完整实现主编辑器大约需要 15 分钟
 
