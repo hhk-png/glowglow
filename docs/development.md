@@ -114,8 +114,11 @@ script, because browsers refuse to load ES modules over `file://`.
 
 `.github/workflows/ci.yml` runs on every push to `main` and every pull request:
 
-- **checks** — lint, both typechecks, and a production build on Node 24;
-- **test** — the Vitest suite on Node 22 and 24;
+- **checks** — lint, both typechecks, a production build on Node 24, and an
+  upload of `dist/` for the runtime job;
+- **test** — the Vitest suite on Node 22 and 24 (Vitest 5 requires Node ≥ 22.12);
+- **runtime** — a smoke test of the built ESM and CJS entries on Node 18 and 20.
+  The development toolchain cannot run there, but the published package can;
 - **browser** — the real-browser editor check on Node 24 with Chrome.
 
 All jobs install with `pnpm install --frozen-lockfile`, so a lockfile out of

@@ -44,13 +44,22 @@ jobs:
       - name: Build
         run: pnpm build
 
+      - name: Upload build
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+          retention-days: 1
+
   test:
     name: Test (Node ${{ matrix.node }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        # pnpm 11 requires Node >= 22.13
+        # Vitest 5 requires Node >= 22.12; Node 18/20 are covered by the
+        # runtime job below, which exercises the built package instead.
         node:
           - 22
           - 24
@@ -74,6 +83,38 @@ jobs:
 
       - name: Test
         run: pnpm test
+
+  # The dev toolchain cannot run on the oldest Node versions the package
+  # supports: pnpm 11 needs Node >= 22.13 and Vitest 5 needs Node >= 22.12.
+  # This job checks the thing engines actually promises — the built package —
+  # on Node 18 and 20, without installing any development dependencies.
+  runtime:
+    name: Runtime (Node ${{ matrix.node }})
+    needs: checks
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node:
+          - 18
+          - 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Download build
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist
+
+      - name: Run runtime smoke test
+        run: node test/runtime-smoke.mjs
 
   browser:
     name: Browser check

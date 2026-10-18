@@ -14,9 +14,9 @@ export default antfu(
     },
   },
   {
-    files: ['bench/**'],
+    files: ['bench/**', 'test/runtime-smoke.mjs'],
     rules: {
-      // the bench measures the built bundle on purpose; `pnpm bench` builds first
+      // these run against the built package on purpose
       'antfu/no-import-dist': 'off',
     },
   },
