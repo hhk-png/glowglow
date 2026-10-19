@@ -19,8 +19,11 @@ import type {
   GlowOptions,
   GlowPatch,
   GlowSource,
+  LanguageGuess,
+  LanguageId,
 } from 'glowglow'
 import {
+  detectLanguage,
   glow,
   glowDocument,
   glowInner,
@@ -80,6 +83,63 @@ markers (search hits, anchors) back into the rendered text.
 const { text, offset } = glowSource(code)
 const at = offset(searchIndex)
 ```
+
+### `detectLanguage(input)`
+
+Guesses the language of a snippet from its structure. This is optional
+metadata: `glow()`, the document and the framework components never call it, and
+highlighting behaves identically with or without the guess.
+
+```ts
+function detectLanguage(input: string | readonly string[]): LanguageGuess | null
+
+interface LanguageGuess {
+  language: LanguageId
+  /** Fraction of the winning language's evidence that matched, 0–1. */
+  confidence: number
+}
+```
+
+```ts
+import { detectLanguage } from 'glowglow'
+
+detectLanguage('package main\n\nfunc main() {}')
+// { language: 'go', confidence: … }
+
+detectLanguage('hello there')
+// null
+```
+
+Recognised ids:
+
+```ts
+type LanguageId
+  = | 'bash' | 'c' | 'cpp' | 'csharp' | 'css' | 'go' | 'haskell' | 'html'
+    | 'java' | 'javascript' | 'jsx' | 'json' | 'kotlin' | 'lua' | 'perl'
+    | 'php' | 'python' | 'ruby' | 'rust' | 'sql' | 'swift' | 'toml'
+    | 'typescript' | 'yaml'
+```
+
+How it works:
+
+- A quick pass checks decisive signals — shebangs, `<?php`, `<!doctype html>`,
+  `package main`, `fn main`, `import Foundation`, `import kotlin.`,
+  `using System;`, `module … where` and `--[[`. A match returns that language
+  with confidence 1 without running the weighted table.
+- Otherwise, each language's weighted list of structural signals is tested:
+  keywords, type syntax, imports, markup, declaration forms. The highest total
+  weight wins; the first rule wins a tie, so specific formats come before
+  general ones.
+- A complete JSON object or array is recognised by `JSON.parse` first.
+- A language needs at least two points of evidence, so plain prose, tiny
+  snippets and one-off keywords return `null`.
+- `confidence` is the fraction of that language's evidence that matched. It is
+  useful for ranking or for a "likely" label, but it is not a calibrated
+  probability.
+- JSX wins when component markup is the strongest signal; `.tsx` files are
+  reported as `jsx` or `typescript` depending on which evidence dominates.
+- The detector never affects the highlighter. It exists for labels, icons,
+  editor modes and analytics.
 
 ### `glowDocument(text)`
 

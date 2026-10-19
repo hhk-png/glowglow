@@ -1,3 +1,5 @@
+export { detectLanguage } from './detect'
+export type { LanguageGuess, LanguageId } from './detect'
 export { glowDocument } from './document'
 export type { GlowPatch } from './document'
 // Public API of glowglow: one one-shot entry point, no language required, plus

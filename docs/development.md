@@ -28,6 +28,7 @@ The `prepare` script installs the Git hooks used by `lint-staged`.
 | `pnpm build:core` | Core `dist/` and the preview bundle only |
 | `pnpm bench` | Build core, then time `glow()` and one `glowDocument().applyEdit()` across a size ladder |
 | `pnpm test:browser` | Build core, then drive the editor in a real browser over the DevTools Protocol |
+| `pnpm preview:generate` | Regenerate the sample page from `preview/samples/` |
 | `pnpm release` | `bumpp --push`; the pushed tag triggers the release workflow |
 
 ## Project layout
@@ -45,6 +46,7 @@ packages/
       render.ts       tokens -> line HTML, escaping and caller marks
       dom.ts          mountGlowLines / mountGlowEditor
       keywords.ts     cross-language keyword table and HTML tag set (internal)
+      detect.ts       optional structural language detection
       incremental.ts  the low-level entry point
     css/              published stylesheets
     preview/          browser demos and their offline IIFE bundle

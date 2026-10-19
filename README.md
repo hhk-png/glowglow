@@ -2,9 +2,7 @@
 
 **CSS-first, language-agnostic syntax highlighting for the web.** You hand it code — *any* code — and it returns semantic HTML (`<b>`, `<em>`, `<strong>`, `<i>`, `<sup>`, `<label>`) that **your** CSS styles. No grammar files, no language packages, no 14 MB of language definitions. One minuscule highlighter for virtually every language.
 
-Built with [tsdown](https://tsdown.dev) and type-checked with [TypeScript 6.x](https://devblogs.microsoft.com/typescript/).
-
-- 🔤 **No language required** — `glow(code)` works for TypeScript, JavaScript, Python, Go, Rust, C/C++, C#, Java, SQL, CSS, HTML, JSX and more, all with the *same* single rule set. The engine never guesses the language and never needs one.
+- 🔤 **No language required** — `glow(code)` works for TypeScript, JavaScript, Python, Go, Rust, C/C++, C#, Java, SQL, CSS, HTML, JSX and more, all with the *same* single rule set. The highlighter never guesses the language and never needs one.
 - 🧱 **Semantic HTML** — keywords `<strong>`, identifiers `<b>`, strings/numbers `<em>`, comments `<sup>`, decorators `<label>`, operators/brackets `<i>`. Style with plain CSS or a handful of CSS variables.
 - 🪶 **Tiny** — the whole highlighter is a few KB, zero runtime dependencies.
 - 🧩 **ESM + CJS + TypeScript types**, works in Node ≥ 18 and the browser.
@@ -13,13 +11,13 @@ Built with [tsdown](https://tsdown.dev) and type-checked with [TypeScript 6.x](h
 ## Documentation
 
 - [Tutorial](docs/tutorial.md) — build an editor step by step ([中文版](docs/tutorial.zh-CN.md))
-- [API reference](docs/api.md) — every export of the three entry points
+- [API reference](docs/api.md) — every export of the core package
 - [React components](docs/react.md) — `<Glow>` and `<GlowEditor>` from `@glowglow/react`
 - [Vue components](docs/vue.md) — `<Glow>` and `<GlowEditor>` from `@glowglow/vue`
 - [How incremental editing works](docs/incremental.md) — the document model and re-colouring pipeline
 - [The DOM layer](docs/dom.md) — line rendering, the editor, folds and marks
 - [Styling](docs/styling.md) — semantic tags, bundled CSS and variables
-- [Development](docs/development.md) — setup, tests, benchmarks, CI and release
+- [Contributing](CONTRIBUTING.md) — local setup, tests and release
 
 ## Install
 
@@ -100,7 +98,7 @@ const patch = doc.applyEdit(from, to, insert)
 `doc.lineCount`/`doc.value` the obvious. A keystroke re-colours exactly one line,
 and costs about the same whatever the file: ~32 µs at 1,000 lines, ~45 µs at
 10,000 and ~64 µs at 20,000, against ~125 ms for a full `glow()` of the same
-10,000 (see `pnpm bench`).
+10,000.
 
 Unlike `glow()`, an editor must not silently rewrite its buffer: `glowDocument`
 does **none** of the CRLF normalisation or leading/trailing blank-line trimming
@@ -139,6 +137,26 @@ waiting on a selection (typing or Backspace/Delete replaces it), **Ctrl+Backspac
 Shift+Tab** to indent or outdent the selected lines (**Esc** releases the editor
 so Tab never traps the keyboard). Composition itself is left to the browser, and
 the document resyncs when it ends.
+
+### Detecting the language (optional)
+
+`glow()` never needs a language. Some UIs still want a label, icon or editor
+mode, so `detectLanguage()` returns the most likely id and a confidence, or
+`null` when the evidence is too weak:
+
+```ts
+import { detectLanguage } from 'glowglow'
+
+const guess = detectLanguage(code)
+if (guess)
+  label.textContent = guess.language // 'typescript', 'go', 'yaml', …
+```
+
+It recognises the mainstream languages in the samples — TypeScript, JavaScript,
+JSX, JSON, Python, Go, Rust, C/C++, C#, Java, Kotlin, Swift, Ruby, PHP, Perl,
+Lua, Haskell, SQL, Bash, HTML, CSS, YAML, TOML — and returns `null` for prose or
+ambiguous snippets. The guess never changes how the code is highlighted; see the
+[API reference](docs/api.md#detectlanguageinput) for details.
 
 ### React and Vue
 
@@ -365,30 +383,8 @@ Line numbers are scoped to `.glow-line`, the class emitted for
 spans of your own inside a `<pre>` (page-break anchors, search hits) are never
 numbered.
 
-## Development
+## Contributing
 
-```bash
-pnpm install
-pnpm typecheck   # core, DOM and both framework adapters
-pnpm test        # vitest (core + adapters)
-pnpm coverage    # vitest + v8 coverage (core src held at 100%)
-pnpm lint        # eslint (antfu config)
-pnpm bench       # build core, then time glow() and one glowDocument() keystroke
-pnpm build       # core + adapter dist/ (ESM, CJS, .d.ts) and the preview bundle
-
-pnpm preview:generate  # regenerate packages/glowglow/preview/preview.html
-
-# the live editor demo: `pnpm build` also emits
-# packages/glowglow/preview/glowglow.preview.js, a self-contained classic script,
-# so the pages work straight from file://
-pnpm build && open packages/glowglow/preview/editor.html    # the editor, with a
-                                          # search box that highlights hits via setMarks
-open packages/glowglow/preview/minimap.html   # an editor plus a minimap drawn from
-                                              # the public document API
-open packages/glowglow/preview/virtual.html   # 100,000 lines, folded blocks, only
-                                              # the visible rows in the DOM
-
-# drive the built editor in a real browser over the DevTools Protocol: real
-# insertText / Backspace / Enter, caret and node-identity assertions
-pnpm test:browser
-```
+See [CONTRIBUTING.md](CONTRIBUTING.md) for local setup and the checks to run
+before a pull request, and [docs/development.md](docs/development.md) for the
+project layout, tests, benchmarks, CI and release process.

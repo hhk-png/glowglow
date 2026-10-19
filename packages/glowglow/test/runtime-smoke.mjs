@@ -15,7 +15,7 @@ import {
   lexSegment,
   tokenText,
 } from '../dist/incremental.js'
-import { glow, glowDocument, glowInner, glowSource } from '../dist/index.js'
+import { detectLanguage, glow, glowDocument, glowInner, glowSource } from '../dist/index.js'
 
 const require = createRequire(import.meta.url)
 
@@ -24,6 +24,9 @@ const html = glow('const a = 1')
 assert.match(html, /^<code>/)
 assert.match(html, /<strong>const<\/strong>/)
 assert.doesNotMatch(glowInner('x'), /<code>/)
+
+assert.equal(detectLanguage('package main\n\nfunc main() {}')?.language, 'go')
+assert.equal(detectLanguage('hello there'), null)
 
 const mapped = glowSource('a\r\nb')
 assert.equal(mapped.text, 'a\nb')
@@ -56,6 +59,7 @@ assert.equal(map.lineIndexAt(2), 4)
 const cjs = require('../dist/index.cjs')
 
 assert.equal(typeof cjs.glow, 'function')
+assert.equal(typeof cjs.detectLanguage, 'function')
 assert.match(cjs.glow('let x = 1'), /<code>/)
 
 process.stdout.write('runtime smoke ok\n')

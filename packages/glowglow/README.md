@@ -18,7 +18,7 @@ numbers, keywords, identifiers, decorators and real HTML/JSX tags structurally.
 
 | Import | Use it for |
 |---|---|
-| `glowglow` | `glow`, `glowInner`, `glowSource`, `glowDocument` |
+| `glowglow` | `glow`, `glowInner`, `glowSource`, `glowDocument`, `detectLanguage` |
 | `glowglow/incremental` | The lexer, classifier, document and fold/render helpers |
 | `glowglow/dom` | `mountGlowLines` and `mountGlowEditor` |
 | `glowglow/css/*` | Bundled stylesheets |
