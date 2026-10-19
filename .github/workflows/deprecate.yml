@@ -1,0 +1,31 @@
+name: Deprecate legacy packages
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deprecate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Deprecate the unscoped package
+        run: >-
+          npm deprecate 'glowglow@*'
+          'This package has moved to @glowglow/core. Install it with: npm install @glowglow/core'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Deprecate the broken 0.3.0 React adapter
+        run: >-
+          npm deprecate '@glowglow/react@0.3.0'
+          'Broken dependency on glowglow@0.3.0; use 0.3.1 or newer.'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
