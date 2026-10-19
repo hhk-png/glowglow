@@ -20,7 +20,7 @@ what everything looks like.
 For example:
 
 ```ts
-import { glowInner } from 'glowglow'
+import { glowInner } from '@glowglow/core'
 
 glowInner('const answer = 42')
 // '<strong>const</strong> answer <i>=</i> <em>42</em>'
@@ -33,16 +33,16 @@ glowInner('const answer = 42')
 
 ```css
 /* token colours, line numbers and the default variables */
-@import 'glowglow/css/syntax.css';
+@import '@glowglow/core/css/syntax.css';
 
 /* an example light theme (override the variables below) */
-@import 'glowglow/css/light.css';
+@import '@glowglow/core/css/light.css';
 
 /* ins / del / dfn line decorations */
-@import 'glowglow/css/markers.css';
+@import '@glowglow/core/css/markers.css';
 
 /* chrome for mountGlowLines() and mountGlowEditor() */
-@import 'glowglow/css/editor.css';
+@import '@glowglow/core/css/editor.css';
 ```
 
 `editor.css` only supplies layout, focus and monospace chrome. Tokens still get

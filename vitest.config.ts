@@ -20,9 +20,9 @@ export default defineConfig({
     // test suite does not depend on a prior build. The regexes keep the bare
     // name from swallowing the subpath entries.
     alias: [
-      { find: /^glowglow\/dom$/, replacement: src('./packages/glowglow/src/dom.ts') },
-      { find: /^glowglow\/incremental$/, replacement: src('./packages/glowglow/src/incremental.ts') },
-      { find: /^glowglow$/, replacement: src('./packages/glowglow/src/index.ts') },
+      { find: /^@glowglow\/core\/dom$/, replacement: src('./packages/glowglow/src/dom.ts') },
+      { find: /^@glowglow\/core\/incremental$/, replacement: src('./packages/glowglow/src/incremental.ts') },
+      { find: /^@glowglow\/core$/, replacement: src('./packages/glowglow/src/index.ts') },
     ],
   },
 })

@@ -35,7 +35,7 @@ The `prepare` script installs the Git hooks used by `lint-staged`.
 
 ```text
 packages/
-  glowglow/
+  glowglow/         @glowglow/core
     src/
       index.ts        public entry: glow, glowInner, glowSource, glowDocument
       glow.ts         one-shot rendering and input normalisation
@@ -58,7 +58,7 @@ docs/                 these pages
 ```
 
 The repository is a pnpm workspace with three packages. Adapters depend on
-`glowglow` with `workspace:^`; `pnpm publish` rewrites that to a real semver
+`@glowglow/core` with `workspace:^`; `pnpm publish` rewrites that to a real semver
 range. The root `package.json` is private and only orchestrates scripts.
 
 The core is DOM-free: `packages/glowglow/tsconfig.json` does not even include
@@ -82,7 +82,7 @@ access out of the engine.
 | `dom.test.ts` | Mounts, patches, marks and folds under happy-dom |
 | `invariants.test.ts` | General engine invariants |
 | `glow.test.ts` | One-shot rendering, options and source mapping |
-| `incremental.test.ts` | The `glowglow/incremental` entry composes |
+| `incremental.test.ts` | The `@glowglow/core/incremental` entry composes |
 | `packages/react/test/*` | React SSR, mounting, edits, refs and cleanup |
 | `packages/vue/test/*` | Vue SSR, mounting, emits, exposed API and cleanup |
 
@@ -163,7 +163,7 @@ Pushing a `v*` tag starts `.github/workflows/release.yml`, which:
 1. checks that the tag matches the version in all three package manifests;
 2. runs typecheck and tests;
 3. creates a GitHub release from conventional commits;
-4. publishes `glowglow`, `@glowglow/react` and `@glowglow/vue` with provenance
+4. publishes `@glowglow/core`, `@glowglow/react` and `@glowglow/vue` with provenance
    (`prepublishOnly` builds each package first).
 
 Version bumps and publishes are release actions — do not change the version as

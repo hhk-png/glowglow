@@ -1,7 +1,7 @@
 {
   "name": "@glowglow/vue",
   "type": "module",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Vue components for glowglow syntax highlighting and live editing",
   "license": "MIT",
   "homepage": "https://github.com/hhk-png/glowglow",
@@ -49,7 +49,7 @@
     "vue": ">=3.3"
   },
   "dependencies": {
-    "glowglow": "workspace:^"
+    "@glowglow/core": "workspace:^"
   },
   "devDependencies": {
     "tsdown": "^0.23.0",

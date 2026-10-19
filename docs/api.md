@@ -3,15 +3,15 @@
 This page documents the public surface of the three JavaScript entry points and
 the CSS assets. Anything not listed here is internal.
 
-- [`glowglow`](#glowglow) — one-shot rendering and the incremental document
-- [`glowglow/incremental`](#glowglowincremental) — the engine taken apart
-- [`glowglow/dom`](#glowglowdom) — browser adapters
+- [`@glowglow/core`](#glowglowcore) — one-shot rendering and the incremental document
+- [`@glowglow/core/incremental`](#glowglowcoreincremental) — the engine taken apart
+- [`@glowglow/core/dom`](#glowglowcoredom) — browser adapters
 - [CSS assets](#css-assets)
 
 The framework packages are documented separately: [React](react.md) and
 [Vue](vue.md).
 
-## `glowglow`
+## `@glowglow/core`
 
 ```ts
 import type {
@@ -21,14 +21,14 @@ import type {
   GlowSource,
   LanguageGuess,
   LanguageId,
-} from 'glowglow'
+} from '@glowglow/core'
 import {
   detectLanguage,
   glow,
   glowDocument,
   glowInner,
   glowSource,
-} from 'glowglow'
+} from '@glowglow/core'
 ```
 
 ### `glow(input, opts?)`
@@ -101,7 +101,7 @@ interface LanguageGuess {
 ```
 
 ```ts
-import { detectLanguage } from 'glowglow'
+import { detectLanguage } from '@glowglow/core'
 
 detectLanguage('package main\n\nfunc main() {}')
 // { language: 'go', confidence: … }
@@ -145,11 +145,11 @@ How it works:
 
 Creates an incremental document for live editing. The core entry re-exports the
 factory and the patch type; the document class itself is available from
-`glowglow/incremental`.
+`@glowglow/core/incremental`.
 
 ```ts
-import type { GlowPatch } from 'glowglow'
-import { glowDocument } from 'glowglow'
+import type { GlowPatch } from '@glowglow/core'
+import { glowDocument } from '@glowglow/core'
 
 const doc = glowDocument(code)
 const patch: GlowPatch = doc.applyEdit(from, to, insert)
@@ -225,7 +225,7 @@ interface GlowMark {
 }
 ```
 
-## `glowglow/incremental`
+## `@glowglow/core/incremental`
 
 This entry is the implementation, deliberately exposed: the lexer, the
 classifier, the document and the fold/render helpers can be composed differently
@@ -249,7 +249,7 @@ import {
   selectMarkupRegions,
   shiftFolds,
   tokenText,
-} from 'glowglow/incremental'
+} from '@glowglow/core/incremental'
 ```
 
 ### Lexing
@@ -442,11 +442,11 @@ without ever materialising the whole text as one string.
 ### The document
 
 ```ts
-export { GlowDocument, glowDocument, sameLexState } from 'glowglow/incremental'
+export { GlowDocument, glowDocument, sameLexState } from '@glowglow/core/incremental'
 ```
 
 `GlowDocument` and `glowDocument()` are documented under
-[`glowglow`](#glowdocument). `sameLexState(a, b)` compares two lexer states by
+[`@glowglow/core`](#glowdocument). `sameLexState(a, b)` compares two lexer states by
 the future they imply, ignoring historical details such as where a block frame
 started. It is the convergence test the incremental lexer uses.
 
@@ -538,7 +538,7 @@ interface GlowMark {
 }
 ```
 
-## `glowglow/dom`
+## `@glowglow/core/dom`
 
 ```ts
 import type {
@@ -547,12 +547,12 @@ import type {
   GlowEditorOptions,
   GlowLines,
   GlowLinesOptions,
-} from 'glowglow/dom'
+} from '@glowglow/core/dom'
 import {
   commonEdit,
   mountGlowEditor,
   mountGlowLines,
-} from 'glowglow/dom'
+} from '@glowglow/core/dom'
 ```
 
 ### `mountGlowLines(el, opts?)`
@@ -651,10 +651,10 @@ interface GlowEdit {
 These are plain files, importable with any bundler:
 
 ```
-glowglow/css/syntax.css    token colours, line numbers, CSS variables
-glowglow/css/light.css     an example light theme
-glowglow/css/markers.css   ins / del / dfn line decorations
-glowglow/css/editor.css    chrome for mountGlowLines() / mountGlowEditor()
+@glowglow/core/css/syntax.css    token colours, line numbers, CSS variables
+@glowglow/core/css/light.css     an example light theme
+@glowglow/core/css/markers.css   ins / del / dfn line decorations
+@glowglow/core/css/editor.css    chrome for mountGlowLines() / mountGlowEditor()
 ```
 
 See [Styling](styling.md) for the vocabulary and variables.

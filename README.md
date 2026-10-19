@@ -22,15 +22,15 @@
 ## Install
 
 ```bash
-pnpm add glowglow
+pnpm add @glowglow/core
 # or
-npm install glowglow
+npm install @glowglow/core
 ```
 
 ## Usage
 
 ```ts
-import { glow } from 'glowglow'
+import { glow } from '@glowglow/core'
 
 const code = `const answer = 42
 console.log(answer)`
@@ -52,7 +52,7 @@ No `language` is needed. Drop the result into a page (e.g. inside a `<pre>`) and
 want to keep its own classes and attributes, take just the inside:
 
 ```ts
-import { glowInner } from 'glowglow'
+import { glowInner } from '@glowglow/core'
 
 codeEl.innerHTML = glowInner(code, { numbered: true })
 ```
@@ -67,7 +67,7 @@ is private, and may change — when you need to put your own markers back
 (elements carrying an `id`, search hits, …):
 
 ```ts
-import { glowInner, glowSource } from 'glowglow'
+import { glowInner, glowSource } from '@glowglow/core'
 
 const { text, offset } = glowSource(code)
 codeEl.innerHTML = glowInner(code)
@@ -81,7 +81,7 @@ on every keystroke. `glowDocument()` keeps the state and re-colours only what an
 edit can reach:
 
 ```ts
-import { glowDocument } from 'glowglow'
+import { glowDocument } from '@glowglow/core'
 
 const doc = glowDocument(code)
 
@@ -111,9 +111,9 @@ For the common case — a `<pre>` the user types into — there is a mountable
 editor that wires the patching to the DOM for you:
 
 ```ts
-import { mountGlowEditor } from 'glowglow/dom'
-import 'glowglow/css/syntax.css'
-import 'glowglow/css/editor.css'
+import { mountGlowEditor } from '@glowglow/core/dom'
+import '@glowglow/core/css/syntax.css'
+import '@glowglow/core/css/editor.css'
 
 const editor = mountGlowEditor(document.querySelector('pre')!, {
   value: code,
@@ -145,7 +145,7 @@ mode, so `detectLanguage()` returns the most likely id and a confidence, or
 `null` when the evidence is too weak:
 
 ```ts
-import { detectLanguage } from 'glowglow'
+import { detectLanguage } from '@glowglow/core'
 
 const guess = detectLanguage(code)
 if (guess)
@@ -164,8 +164,8 @@ Both framework adapters expose a static `<Glow>` and a live `<GlowEditor>`:
 
 ```tsx
 import { Glow, GlowEditor } from '@glowglow/react'
-import 'glowglow/css/editor.css'
-import 'glowglow/css/syntax.css'
+import '@glowglow/core/css/editor.css'
+import '@glowglow/core/css/syntax.css'
 
 export function Example({ source, save }: { source: string, save: (value: string) => void }) {
   return (
@@ -180,8 +180,8 @@ export function Example({ source, save }: { source: string, save: (value: string
 ```vue
 <script setup lang="ts">
 import { Glow, GlowEditor } from '@glowglow/vue'
-import 'glowglow/css/editor.css'
-import 'glowglow/css/syntax.css'
+import '@glowglow/core/css/editor.css'
+import '@glowglow/core/css/syntax.css'
 </script>
 
 <template>
@@ -190,11 +190,11 @@ import 'glowglow/css/syntax.css'
 </template>
 ```
 
-Install the adapter with the framework and `glowglow` itself (for the CSS):
+Install the adapter with the framework and `@glowglow/core` itself (for the CSS):
 
 ```bash
-pnpm add @glowglow/react react glowglow
-pnpm add @glowglow/vue vue glowglow
+pnpm add @glowglow/react react @glowglow/core
+pnpm add @glowglow/vue vue @glowglow/core
 ```
 
 See [React](docs/react.md) and [Vue](docs/vue.md) for props, events, refs,
@@ -207,9 +207,9 @@ possible. The package ships in three pieces, and the split is meant to be used:
 
 | entry | what it is | needs DOM |
 |---|---|---|
-| `glowglow` | `glow()` for static markup, `glowDocument()` for editing | no |
-| `glowglow/incremental` | the lexer, classifier and renderer the document is built from, plus `buildFoldMap()` — for a token-level renderer, a minimap, semantic search, a folded outline | no |
-| `glowglow/dom` | `mountGlowLines()` renders and patches lines; `mountGlowEditor()` adds the input handling on top | yes |
+| `@glowglow/core` | `glow()` for static markup, `glowDocument()` for editing | no |
+| `@glowglow/core/incremental` | the lexer, classifier and renderer the document is built from, plus `buildFoldMap()` — for a token-level renderer, a minimap, semantic search, a folded outline | no |
+| `@glowglow/core/dom` | `mountGlowLines()` renders and patches lines; `mountGlowEditor()` adds the input handling on top | yes |
 
 The contract between the engine and any editor is one call:
 
@@ -286,7 +286,7 @@ If you want the line elements maintained for you, `mountGlowLines` is the render
 half on its own — no `contenteditable`, no key handling:
 
 ```ts
-import { mountGlowLines } from 'glowglow/dom'
+import { mountGlowLines } from '@glowglow/core/dom'
 
 const view = mountGlowLines(el, { numbered: true })
 // [your input layer]
@@ -304,7 +304,7 @@ The other classic route is a textarea overlay: a transparent `<textarea>` over a
 it. That is roughly this, with `commonEdit` turning whole-text input into a range:
 
 ```ts
-import { commonEdit, mountGlowLines } from 'glowglow/dom'
+import { commonEdit, mountGlowLines } from '@glowglow/core/dom'
 
 const view = mountGlowLines(pre)
 textarea.addEventListener('input', () => {
@@ -345,16 +345,16 @@ Glowglow ships the stylesheets from the original nue-glow project. Import one or
 
 ```css
 /* base token colors (syntax.css) */
-@import 'glowglow/css/syntax.css';
+@import '@glowglow/core/css/syntax.css';
 
 /* +/- ins/del/dfn line markers (see the note below) */
-@import 'glowglow/css/markers.css';
+@import '@glowglow/core/css/markers.css';
 
 /* example light-mode theme */
-@import 'glowglow/css/light.css';
+@import '@glowglow/core/css/light.css';
 
-/* chrome for mountGlowEditor() from glowglow/dom */
-@import 'glowglow/css/editor.css';
+/* chrome for mountGlowEditor() from @glowglow/core/dom */
+@import '@glowglow/core/css/editor.css';
 ```
 
 `glow()` escapes its input and only emits `<strong>`, `<b>`, `<em>`, `<i>`, `<sup>`

@@ -12,15 +12,15 @@ Requires React ≥ 18.
 ## Install
 
 ```bash
-pnpm add @glowglow/react react glowglow
+pnpm add @glowglow/react react @glowglow/core
 ```
 
-`glowglow` is installed directly because the stylesheets are imported from it;
+`@glowglow/core` is installed directly because the stylesheets are imported from it;
 pnpm does not expose a transitive dependency's CSS to your app.
 
 ```ts
-import 'glowglow/css/syntax.css' // token colours and line numbers
-import 'glowglow/css/editor.css' // chrome for the editor
+import '@glowglow/core/css/syntax.css' // token colours and line numbers
+import '@glowglow/core/css/editor.css' // chrome for the editor
 ```
 
 ## Static highlighting
@@ -109,8 +109,8 @@ export interface GlowEditorHandle {
 Use it for sidecars and editor features that are not props:
 
 ```tsx
+import type { GlowMark } from '@glowglow/core'
 import type { GlowEditorHandle } from '@glowglow/react'
-import type { GlowMark } from 'glowglow'
 import { GlowEditor } from '@glowglow/react'
 import { useEffect, useRef } from 'react'
 
@@ -150,8 +150,8 @@ once-per-component-lifetime callback.
 
 ## Styling
 
-The components emit no styles. Load `glowglow/css/syntax.css` and, for the
-editor, `glowglow/css/editor.css`. All colours come from the `--glow-*` CSS
+The components emit no styles. Load `@glowglow/core/css/syntax.css` and, for the
+editor, `@glowglow/core/css/editor.css`. All colours come from the `--glow-*` CSS
 variables described in [Styling](styling.md).
 
 `<Glow>` sets `language` only as metadata; the highlighter itself never reads it.

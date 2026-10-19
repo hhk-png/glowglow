@@ -61,17 +61,35 @@ jobs:
       # `prepublishOnly` runs the build, so dist/ is always fresh in each
       # tarball. Adapters must use pnpm: it rewrites their `workspace:^`
       # dependency to a real semver range.
-      - name: Publish glowglow
-        run: pnpm --filter glowglow publish --provenance --access public --no-git-checks
+      - name: Publish @glowglow/core
+        run: |
+          version="$(node -p "require('./packages/glowglow/package.json').version")"
+          if npm view "@glowglow/core@$version" version >/dev/null 2>&1; then
+            echo "@glowglow/core@$version is already published"
+          else
+            pnpm --filter @glowglow/core publish --provenance --access public --no-git-checks
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish @glowglow/react
-        run: pnpm --filter @glowglow/react publish --provenance --access public --no-git-checks
+        run: |
+          version="$(node -p "require('./packages/react/package.json').version")"
+          if npm view "@glowglow/react@$version" version >/dev/null 2>&1; then
+            echo "@glowglow/react@$version is already published"
+          else
+            pnpm --filter @glowglow/react publish --provenance --access public --no-git-checks
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish @glowglow/vue
-        run: pnpm --filter @glowglow/vue publish --provenance --access public --no-git-checks
+        run: |
+          version="$(node -p "require('./packages/vue/package.json').version")"
+          if npm view "@glowglow/vue@$version" version >/dev/null 2>&1; then
+            echo "@glowglow/vue@$version is already published"
+          else
+            pnpm --filter @glowglow/vue publish --provenance --access public --no-git-checks
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

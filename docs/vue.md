@@ -12,15 +12,15 @@ Requires Vue ≥ 3.3.
 ## Install
 
 ```bash
-pnpm add @glowglow/vue vue glowglow
+pnpm add @glowglow/vue vue @glowglow/core
 ```
 
-`glowglow` is installed directly because the stylesheets are imported from it;
+`@glowglow/core` is installed directly because the stylesheets are imported from it;
 pnpm does not expose a transitive dependency's CSS to your app.
 
 ```ts
-import 'glowglow/css/syntax.css' // token colours and line numbers
-import 'glowglow/css/editor.css' // chrome for the editor
+import '@glowglow/core/css/syntax.css' // token colours and line numbers
+import '@glowglow/core/css/editor.css' // chrome for the editor
 ```
 
 ## Static highlighting
@@ -28,7 +28,7 @@ import 'glowglow/css/editor.css' // chrome for the editor
 ```vue
 <script setup lang="ts">
 import { Glow } from '@glowglow/vue'
-import 'glowglow/css/syntax.css'
+import '@glowglow/core/css/syntax.css'
 </script>
 
 <template>
@@ -60,8 +60,8 @@ value, which is fine but re-highlights.
 import type { GlowEditorHandle } from '@glowglow/vue'
 import { GlowEditor } from '@glowglow/vue'
 import { ref } from 'vue'
-import 'glowglow/css/editor.css'
-import 'glowglow/css/syntax.css'
+import '@glowglow/core/css/editor.css'
+import '@glowglow/core/css/syntax.css'
 
 const source = ref('const answer = 42')
 const editor = ref<GlowEditorHandle | null>(null)
@@ -161,8 +161,8 @@ so hydration matches. Do not read `window` or `document` at module scope.
 
 ## Styling
 
-The components emit no styles. Load `glowglow/css/syntax.css` and, for the
-editor, `glowglow/css/editor.css`. All colours come from the `--glow-*` CSS
+The components emit no styles. Load `@glowglow/core/css/syntax.css` and, for the
+editor, `@glowglow/core/css/editor.css`. All colours come from the `--glow-*` CSS
 variables described in [Styling](styling.md).
 
 `<Glow>` sets `language` only as metadata; the highlighter itself never reads it.

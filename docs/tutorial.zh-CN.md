@@ -19,7 +19,7 @@
 pnpm create vite glow-editor --template vanilla-ts
 cd glow-editor
 pnpm install
-pnpm add glowglow
+pnpm add @glowglow/core
 ```
 
 随着教程推进，替换 `src/main.ts` 的内容即可。`index.html` 里保留一个
@@ -31,9 +31,9 @@ pnpm add glowglow
 文档、输入处理、光标、撤销历史和 patch 应用。
 
 ```ts
-import { mountGlowEditor } from 'glowglow/dom'
-import 'glowglow/css/editor.css'
-import 'glowglow/css/syntax.css'
+import { mountGlowEditor } from '@glowglow/core/dom'
+import '@glowglow/core/css/editor.css'
+import '@glowglow/core/css/syntax.css'
 
 const source = `function greet(name: string) {
   return 'hello ' + name
@@ -65,9 +65,9 @@ editor.element.focus()
 存进去什么，拿回来就是什么。
 
 ```ts
-import { mountGlowEditor } from 'glowglow/dom'
-import 'glowglow/css/editor.css'
-import 'glowglow/css/syntax.css'
+import { mountGlowEditor } from '@glowglow/core/dom'
+import '@glowglow/core/css/editor.css'
+import '@glowglow/core/css/syntax.css'
 
 const saved = localStorage.getItem('glowglow:draft')
 
@@ -88,10 +88,10 @@ editor.element.focus()
 一个简单的、基于 token 的括号匹配器：
 
 ```ts
-import type { GlowDocument, GlowFold } from 'glowglow/incremental'
-import { mountGlowEditor } from 'glowglow/dom'
-import 'glowglow/css/editor.css'
-import 'glowglow/css/syntax.css'
+import type { GlowDocument, GlowFold } from '@glowglow/core/incremental'
+import { mountGlowEditor } from '@glowglow/core/dom'
+import '@glowglow/core/css/editor.css'
+import '@glowglow/core/css/syntax.css'
 
 const editor = mountGlowEditor(document.querySelector('#editor')!, {
   value: source,
@@ -156,11 +156,11 @@ editor.setFolds(folds)
 直接传进来。
 
 ```ts
-import type { GlowMark } from 'glowglow'
-import { mountGlowEditor } from 'glowglow/dom'
-import { buildFoldMap } from 'glowglow/incremental'
-import 'glowglow/css/editor.css'
-import 'glowglow/css/syntax.css'
+import type { GlowMark } from '@glowglow/core'
+import { mountGlowEditor } from '@glowglow/core/dom'
+import { buildFoldMap } from '@glowglow/core/incremental'
+import '@glowglow/core/css/editor.css'
+import '@glowglow/core/css/syntax.css'
 
 const editor = mountGlowEditor(document.querySelector('#editor')!, {
   value: source,
@@ -227,11 +227,11 @@ mark 会把落点所在的 token 切开，所以 token 自己的颜色仍然保�
 canvas 上画矩形。
 
 ```ts
-import type { GlowDocument, GlowFold } from 'glowglow/incremental'
-import { mountGlowEditor } from 'glowglow/dom'
-import { buildFoldMap } from 'glowglow/incremental'
-import 'glowglow/css/editor.css'
-import 'glowglow/css/syntax.css'
+import type { GlowDocument, GlowFold } from '@glowglow/core/incremental'
+import { mountGlowEditor } from '@glowglow/core/dom'
+import { buildFoldMap } from '@glowglow/core/incremental'
+import '@glowglow/core/css/editor.css'
+import '@glowglow/core/css/syntax.css'
 
 const COLORS: Record<string, string> = {
   strong: '#419fff',
@@ -359,8 +359,8 @@ textarea 覆盖层把光标留在 `<textarea>` 里，下面渲染彩色行，所
 ```
 
 ```ts
-import { commonEdit, mountGlowLines } from 'glowglow/dom'
-import 'glowglow/css/syntax.css'
+import { commonEdit, mountGlowLines } from '@glowglow/core/dom'
+import '@glowglow/core/css/syntax.css'
 
 const input = document.querySelector('textarea')!
 const view = mountGlowLines(document.querySelector('#view')!, {
@@ -398,7 +398,7 @@ input.addEventListener('scroll', () => {
 ```
 
 ```ts
-import { buildFoldMap, glowDocument } from 'glowglow/incremental'
+import { buildFoldMap, glowDocument } from '@glowglow/core/incremental'
 
 const doc = glowDocument(source)
 const folds = [{ from: 12, to: 30 }]

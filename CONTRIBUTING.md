@@ -7,7 +7,7 @@ Thanks for helping improve Glowglow.
 The repository is a pnpm workspace with three packages:
 
 ```
-packages/glowglow   the core library
+packages/glowglow   @glowglow/core
 packages/react      @glowglow/react
 packages/vue        @glowglow/vue
 ```

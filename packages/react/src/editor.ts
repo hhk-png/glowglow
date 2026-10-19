@@ -1,8 +1,8 @@
-import type { GlowMark } from 'glowglow'
-import type { GlowEditorOptions, GlowEditor as MountedGlowEditor } from 'glowglow/dom'
-import type { GlowDocument, GlowFold } from 'glowglow/incremental'
+import type { GlowMark } from '@glowglow/core'
+import type { GlowEditorOptions, GlowEditor as MountedGlowEditor } from '@glowglow/core/dom'
+import type { GlowDocument, GlowFold } from '@glowglow/core/incremental'
 import type { HTMLAttributes } from 'react'
-import { mountGlowEditor } from 'glowglow/dom'
+import { mountGlowEditor } from '@glowglow/core/dom'
 import { createElement, forwardRef, useEffect, useImperativeHandle, useRef } from 'react'
 
 /** What a React ref receives after the editor mounts. */

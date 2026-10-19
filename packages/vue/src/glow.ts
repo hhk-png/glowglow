@@ -1,5 +1,5 @@
 import type { PropType } from 'vue'
-import { glowInner } from 'glowglow'
+import { glowInner } from '@glowglow/core'
 import { defineComponent, h } from 'vue'
 
 /**

@@ -1,7 +1,7 @@
-import type { GlowMark } from 'glowglow'
-import type { GlowEditor as MountedGlowEditor } from 'glowglow/dom'
-import type { GlowDocument, GlowFold } from 'glowglow/incremental'
-import { mountGlowEditor } from 'glowglow/dom'
+import type { GlowMark } from '@glowglow/core'
+import type { GlowEditor as MountedGlowEditor } from '@glowglow/core/dom'
+import type { GlowDocument, GlowFold } from '@glowglow/core/incremental'
+import { mountGlowEditor } from '@glowglow/core/dom'
 import { defineComponent, h, onBeforeUnmount, onMounted, shallowRef, watch } from 'vue'
 
 /** What a template ref receives after the editor mounts. */

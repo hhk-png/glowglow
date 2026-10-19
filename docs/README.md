@@ -13,7 +13,7 @@ the deep dives.
 | Page | What it covers |
 |---|---|
 | [Tutorial](tutorial.md) | Build an editor step by step — [中文版](tutorial.zh-CN.md) |
-| [API reference](api.md) | Every export of `glowglow`, `glowglow/incremental` and `glowglow/dom` |
+| [API reference](api.md) | Every export of `@glowglow/core`, `@glowglow/core/incremental` and `@glowglow/core/dom` |
 | [React](react.md) | `<Glow>` and `<GlowEditor>` from `@glowglow/react` |
 | [Vue](vue.md) | `<Glow>` and `<GlowEditor>` from `@glowglow/vue` |
 | [Incremental editing](incremental.md) | How `GlowDocument` re-lexes and re-colours only what an edit touched |
@@ -25,16 +25,16 @@ the deep dives.
 
 | Import | Environment | Use it for |
 |---|---|---|
-| `glowglow` | anywhere | One-shot rendering (`glow`, `glowInner`, `glowSource`) and `glowDocument()` |
-| `glowglow/incremental` | anywhere, DOM-free | Building a token-level renderer, a minimap, semantic search, or a different editor |
-| `glowglow/dom` | browser | Ready-made line rendering and a contenteditable editor |
+| `@glowglow/core` | anywhere | One-shot rendering (`glow`, `glowInner`, `glowSource`) and `glowDocument()` |
+| `@glowglow/core/incremental` | anywhere, DOM-free | Building a token-level renderer, a minimap, semantic search, or a different editor |
+| `@glowglow/core/dom` | browser | Ready-made line rendering and a contenteditable editor |
 | `@glowglow/react` | React ≥ 18 | `<Glow>` and `<GlowEditor>` components |
 | `@glowglow/vue` | Vue ≥ 3.3 | `<Glow>` and `<GlowEditor>` components |
 
 ## At a glance
 
 ```ts
-import { glow } from 'glowglow'
+import { glow } from '@glowglow/core'
 
 const html = glow(`const answer = 42
 console.log(answer)`)
@@ -42,7 +42,7 @@ console.log(answer)`)
 ```
 
 ```ts
-import { glowDocument } from 'glowglow'
+import { glowDocument } from '@glowglow/core'
 
 const doc = glowDocument(source)
 const patch = doc.applyEdit(from, to, insert)
@@ -50,13 +50,13 @@ const patch = doc.applyEdit(from, to, insert)
 ```
 
 ```ts
-import { mountGlowEditor } from 'glowglow/dom'
-import 'glowglow/css/syntax.css'
-import 'glowglow/css/editor.css'
+import { mountGlowEditor } from '@glowglow/core/dom'
+import '@glowglow/core/css/syntax.css'
+import '@glowglow/core/css/editor.css'
 
 const editor = mountGlowEditor(document.querySelector('pre')!, { value: source })
 ```
 
 The package ships ESM, CJS and TypeScript declarations, and works in Node ≥ 18
 and every modern browser. The core entries never touch the DOM; only
-`glowglow/dom` does.
+`@glowglow/core/dom` does.

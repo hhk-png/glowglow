@@ -6,16 +6,16 @@ renders highlighted source, `<GlowEditor>` mounts the incremental code editor.
 ## Install
 
 ```bash
-pnpm add @glowglow/react react glowglow
+pnpm add @glowglow/react react @glowglow/core
 ```
 
-Install `glowglow` directly as well, so you can import its stylesheets.
+Install `@glowglow/core` directly as well, so you can import its stylesheets.
 
 ## Static highlighting
 
 ```tsx
 import { Glow } from '@glowglow/react'
-import 'glowglow/css/syntax.css'
+import '@glowglow/core/css/syntax.css'
 
 export function Example() {
   return <Glow code="const answer = 42" language="ts" numbered />
@@ -32,8 +32,8 @@ the normal HTML attributes of the rendered element.
 import type { GlowEditorHandle } from '@glowglow/react'
 import { GlowEditor } from '@glowglow/react'
 import { useRef } from 'react'
-import 'glowglow/css/editor.css'
-import 'glowglow/css/syntax.css'
+import '@glowglow/core/css/editor.css'
+import '@glowglow/core/css/syntax.css'
 
 export function Example({ source, save }: { source: string, save: (value: string) => void }) {
   const editor = useRef<GlowEditorHandle>(null)

@@ -1,11 +1,11 @@
-# glowglow
+# @glowglow/core
 
 CSS-first, language-agnostic syntax highlighting for the web. Hand it code — any
 code — and it returns semantic HTML (`<b>`, `<em>`, `<strong>`, `<i>`, `<sup>`,
 `<label>`) that your CSS styles.
 
 ```ts
-import { glow } from 'glowglow'
+import { glow } from '@glowglow/core'
 
 const html = glow(`const answer = 42
 console.log(answer)`)
@@ -18,10 +18,10 @@ numbers, keywords, identifiers, decorators and real HTML/JSX tags structurally.
 
 | Import | Use it for |
 |---|---|
-| `glowglow` | `glow`, `glowInner`, `glowSource`, `glowDocument`, `detectLanguage` |
-| `glowglow/incremental` | The lexer, classifier, document and fold/render helpers |
-| `glowglow/dom` | `mountGlowLines` and `mountGlowEditor` |
-| `glowglow/css/*` | Bundled stylesheets |
+| `@glowglow/core` | `glow`, `glowInner`, `glowSource`, `glowDocument`, `detectLanguage` |
+| `@glowglow/core/incremental` | The lexer, classifier, document and fold/render helpers |
+| `@glowglow/core/dom` | `mountGlowLines` and `mountGlowEditor` |
+| `@glowglow/core/css/*` | Bundled stylesheets |
 
 React and Vue components live in [`@glowglow/react`](https://www.npmjs.com/package/@glowglow/react)
 and [`@glowglow/vue`](https://www.npmjs.com/package/@glowglow/vue).

@@ -1,6 +1,6 @@
 # The DOM layer
 
-`glowglow/dom` provides two mounts built on `GlowDocument`:
+`@glowglow/core/dom` provides two mounts built on `GlowDocument`:
 
 | Function | What it does | Input handling |
 |---|---|---|
@@ -8,7 +8,7 @@
 | `mountGlowEditor(el, opts?)` | Adds a `contenteditable` editor on top | `beforeinput`, keys, clipboard, IME |
 
 Both render the same row structure, so they look identical: load
-`glowglow/css/syntax.css` for the colours and `glowglow/css/editor.css` for the
+`@glowglow/core/css/syntax.css` for the colours and `@glowglow/core/css/editor.css` for the
 chrome. All colours come from CSS variables, so a theme can restyle either one.
 
 ## DOM structure
@@ -34,7 +34,7 @@ Use this when you want the rendering and patch-application, but your own input
 layer: a textarea overlay, a virtualised list, a framework component.
 
 ```ts
-import { mountGlowLines } from 'glowglow/dom'
+import { mountGlowLines } from '@glowglow/core/dom'
 
 const view = mountGlowLines(document.querySelector('pre')!, {
   numbered: true,
@@ -69,7 +69,7 @@ the caret lives in the textarea and rebuilding line elements never disturbs it.
 `commonEdit()` turns the textarea's whole value into a range edit:
 
 ```ts
-import { commonEdit, mountGlowLines } from 'glowglow/dom'
+import { commonEdit, mountGlowLines } from '@glowglow/core/dom'
 
 const view = mountGlowLines(pre)
 textarea.addEventListener('input', () => {
@@ -84,9 +84,9 @@ textarea.addEventListener('input', () => {
 Use this when the editor *is* the `<pre>` the user types into.
 
 ```ts
-import { mountGlowEditor } from 'glowglow/dom'
-import 'glowglow/css/syntax.css'
-import 'glowglow/css/editor.css'
+import { mountGlowEditor } from '@glowglow/core/dom'
+import '@glowglow/core/css/syntax.css'
+import '@glowglow/core/css/editor.css'
 
 const editor = mountGlowEditor(document.querySelector('pre')!, {
   value: source,
@@ -142,7 +142,7 @@ Folds have these semantics:
 For a virtualised renderer, `buildFoldMap()` is the whole contract:
 
 ```ts
-import { buildFoldMap } from 'glowglow/incremental'
+import { buildFoldMap } from '@glowglow/core/incremental'
 
 const map = buildFoldMap(folds, doc.lineCount)
 for (let row = 0; row < map.visibleCount; row++)

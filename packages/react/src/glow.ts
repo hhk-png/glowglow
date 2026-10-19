@@ -1,5 +1,5 @@
 import type { HTMLAttributes } from 'react'
-import { glowInner } from 'glowglow'
+import { glowInner } from '@glowglow/core'
 import { createElement, forwardRef, useMemo } from 'react'
 
 export interface GlowProps extends Omit<HTMLAttributes<HTMLElement>, 'children' | 'dangerouslySetInnerHTML'> {

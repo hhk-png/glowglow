@@ -21,7 +21,7 @@ working demos in [`preview/`](../packages/glowglow/preview/).
 pnpm create vite glow-editor --template vanilla-ts
 cd glow-editor
 pnpm install
-pnpm add glowglow
+pnpm add @glowglow/core
 ```
 
 Replace `src/main.ts` as the tutorial goes. Keep `index.html` with a single
@@ -34,9 +34,9 @@ owns the document, the input handling, the caret, the undo history and the patch
 application.
 
 ```ts
-import { mountGlowEditor } from 'glowglow/dom'
-import 'glowglow/css/editor.css'
-import 'glowglow/css/syntax.css'
+import { mountGlowEditor } from '@glowglow/core/dom'
+import '@glowglow/core/css/editor.css'
+import '@glowglow/core/css/syntax.css'
 
 const source = `function greet(name: string) {
   return 'hello ' + name
@@ -69,9 +69,9 @@ Read the saved text before mounting. `value` is the initial text; the document
 does not normalise line endings, so what you store is exactly what you get back.
 
 ```ts
-import { mountGlowEditor } from 'glowglow/dom'
-import 'glowglow/css/editor.css'
-import 'glowglow/css/syntax.css'
+import { mountGlowEditor } from '@glowglow/core/dom'
+import '@glowglow/core/css/editor.css'
+import '@glowglow/core/css/syntax.css'
 
 const saved = localStorage.getItem('glowglow:draft')
 
@@ -92,10 +92,10 @@ the ranges and hand them over with `setFolds()`.
 A simple, token-aware brace matcher:
 
 ```ts
-import type { GlowDocument, GlowFold } from 'glowglow/incremental'
-import { mountGlowEditor } from 'glowglow/dom'
-import 'glowglow/css/editor.css'
-import 'glowglow/css/syntax.css'
+import type { GlowDocument, GlowFold } from '@glowglow/core/incremental'
+import { mountGlowEditor } from '@glowglow/core/dom'
+import '@glowglow/core/css/editor.css'
+import '@glowglow/core/css/syntax.css'
 
 const editor = mountGlowEditor(document.querySelector('#editor')!, {
   value: source,
@@ -162,11 +162,11 @@ text offsets, the same numbers as `Token.start` and `Token.end`, so search
 results and language-server diagnostics pass straight through.
 
 ```ts
-import type { GlowMark } from 'glowglow'
-import { mountGlowEditor } from 'glowglow/dom'
-import { buildFoldMap } from 'glowglow/incremental'
-import 'glowglow/css/editor.css'
-import 'glowglow/css/syntax.css'
+import type { GlowMark } from '@glowglow/core'
+import { mountGlowEditor } from '@glowglow/core/dom'
+import { buildFoldMap } from '@glowglow/core/incremental'
+import '@glowglow/core/css/editor.css'
+import '@glowglow/core/css/syntax.css'
 
 const editor = mountGlowEditor(document.querySelector('#editor')!, {
   value: source,
@@ -233,11 +233,11 @@ A minimap does not parse the rendered HTML. It asks the document for each
 line's tokens and tags and draws rectangles on a canvas.
 
 ```ts
-import type { GlowDocument, GlowFold } from 'glowglow/incremental'
-import { mountGlowEditor } from 'glowglow/dom'
-import { buildFoldMap } from 'glowglow/incremental'
-import 'glowglow/css/editor.css'
-import 'glowglow/css/syntax.css'
+import type { GlowDocument, GlowFold } from '@glowglow/core/incremental'
+import { mountGlowEditor } from '@glowglow/core/dom'
+import { buildFoldMap } from '@glowglow/core/incremental'
+import '@glowglow/core/css/editor.css'
+import '@glowglow/core/css/syntax.css'
 
 const COLORS: Record<string, string> = {
   strong: '#419fff',
@@ -368,8 +368,8 @@ lines underneath, so rebuilding rows can never disturb the selection.
 ```
 
 ```ts
-import { commonEdit, mountGlowLines } from 'glowglow/dom'
-import 'glowglow/css/syntax.css'
+import { commonEdit, mountGlowLines } from '@glowglow/core/dom'
+import '@glowglow/core/css/syntax.css'
 
 const input = document.querySelector('textarea')!
 const view = mountGlowLines(document.querySelector('#view')!, {
@@ -409,7 +409,7 @@ you the line/row projection; draw only the rows in the viewport.
 ```
 
 ```ts
-import { buildFoldMap, glowDocument } from 'glowglow/incremental'
+import { buildFoldMap, glowDocument } from '@glowglow/core/incremental'
 
 const doc = glowDocument(source)
 const folds = [{ from: 12, to: 30 }]

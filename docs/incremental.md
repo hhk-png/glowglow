@@ -164,7 +164,7 @@ with `\n`.
 
 ## Driving the engine without the DOM
 
-`glowglow/incremental` exposes the same pieces the document is built from:
+`@glowglow/core/incremental` exposes the same pieces the document is built from:
 
 ```ts
 import {
@@ -174,7 +174,7 @@ import {
   findTagCandidates,
   glowDocument,
   lexSegment,
-} from 'glowglow/incremental'
+} from '@glowglow/core/incremental'
 
 // lex a file line by line, keeping a checkpoint per line
 let state = []
@@ -195,7 +195,7 @@ const map = buildFoldMap([{ from: 12, to: 30 }], doc.lineCount)
 The classifier can also be applied to a slice without a `GlowDocument`:
 
 ```ts
-import { classifyTokenWindow, countTagNames, findTagCandidates, lex } from 'glowglow/incremental'
+import { classifyTokenWindow, countTagNames, findTagCandidates, lex } from '@glowglow/core/incremental'
 
 const toks = lex(source)
 const counts = countTagNames(findTagCandidates(source, toks))

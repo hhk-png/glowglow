@@ -16,16 +16,16 @@
     "node": ">=22.13"
   },
   "scripts": {
-    "build": "pnpm --filter glowglow run build && pnpm --filter @glowglow/react --filter @glowglow/vue run build",
-    "build:core": "pnpm --filter glowglow run build",
-    "typecheck": "tsc --noEmit -p tsconfig.json && pnpm build:core && pnpm --filter glowglow run typecheck && pnpm --filter @glowglow/react --filter @glowglow/vue run typecheck",
+    "build": "pnpm --filter @glowglow/core run build && pnpm --filter @glowglow/react --filter @glowglow/vue run build",
+    "build:core": "pnpm --filter @glowglow/core run build",
+    "typecheck": "tsc --noEmit -p tsconfig.json && pnpm build:core && pnpm --filter @glowglow/core run typecheck && pnpm --filter @glowglow/react --filter @glowglow/vue run typecheck",
     "lint": "eslint . --cache",
     "fix": "eslint . --fix",
     "test": "vitest run",
     "coverage": "vitest run --coverage",
-    "test:browser": "pnpm --filter glowglow run test:browser",
-    "bench": "pnpm --filter glowglow run bench",
-    "preview:generate": "pnpm --filter glowglow run preview:generate",
+    "test:browser": "pnpm --filter @glowglow/core run test:browser",
+    "bench": "pnpm --filter @glowglow/core run bench",
+    "preview:generate": "pnpm --filter @glowglow/core run preview:generate",
     "release": "bumpp --push",
     "prepare": "simple-git-hooks"
   },

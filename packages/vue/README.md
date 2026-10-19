@@ -6,17 +6,17 @@ renders highlighted source, `<GlowEditor>` mounts the incremental code editor.
 ## Install
 
 ```bash
-pnpm add @glowglow/vue vue glowglow
+pnpm add @glowglow/vue vue @glowglow/core
 ```
 
-Install `glowglow` directly as well, so you can import its stylesheets.
+Install `@glowglow/core` directly as well, so you can import its stylesheets.
 
 ## Static highlighting
 
 ```vue
 <script setup lang="ts">
 import { Glow } from '@glowglow/vue'
-import 'glowglow/css/syntax.css'
+import '@glowglow/core/css/syntax.css'
 </script>
 
 <template>
@@ -35,8 +35,8 @@ the normal HTML attributes of the rendered element.
 import type { GlowEditorHandle } from '@glowglow/vue'
 import { GlowEditor } from '@glowglow/vue'
 import { ref } from 'vue'
-import 'glowglow/css/editor.css'
-import 'glowglow/css/syntax.css'
+import '@glowglow/core/css/editor.css'
+import '@glowglow/core/css/syntax.css'
 
 const source = ref('const answer = 42')
 const editor = ref<GlowEditorHandle | null>(null)
