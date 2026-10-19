@@ -1,7 +1,7 @@
 {
   "name": "@glowglow/vue",
   "type": "module",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Vue components for glowglow syntax highlighting and live editing",
   "license": "MIT",
   "homepage": "https://github.com/hhk-png/glowglow",
